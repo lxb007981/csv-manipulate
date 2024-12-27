@@ -1,0 +1,48 @@
+{
+  "name": "csv-manipuate",
+  "displayName": "CSV-Manipulate",
+  "description": "Get/Set a cell's value in a csv file using row/column names.",
+  "version": "0.0.1",
+  "publisher": "lxb007981",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lxb007981/csv-manipulate"
+  },
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension",
+  "contributes": {
+    "commands": [
+      {
+        "command": "extension.getCell",
+        "title": "Get Cell"
+      },
+      {
+        "command": "extension.setCell",
+        "title": "Set Cell"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "lint": "eslint",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.13.0",
+    "@stylistic/eslint-plugin": "^2.9.0",
+    "@types/node": "^20",
+    "@types/vscode": "^1.73.0",
+    "eslint": "^9.13.0",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.16.0"
+  }
+}
