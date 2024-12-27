@@ -41,6 +41,16 @@
           "type": "boolean",
           "default": true,
           "description": "Trim the input string before getting or setting the cell. This option is ignored if a space is used as the separator."
+        },
+        "csv-manipulate.partialMatch": {
+          "type": "boolean",
+          "default": true,
+          "description": "Instead of exact match, perform a partial match of row/col names."
+        },
+        "csv-manipulate.caseInsensitive": {
+          "type": "boolean",
+          "default": true,
+          "description": "search row/col names case insensitively."
         }
       }
     }
