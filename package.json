@@ -28,7 +28,22 @@
         "command": "extension.setCell",
         "title": "Set Cell"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "CSV-Manipulate",
+      "properties": {
+        "csv-manipulate.separator": {
+          "type": "string",
+          "default": ",",
+          "description": "Separator of CSV"
+        },
+        "csv-manipulate.trimEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Trim the input string before getting or setting the cell. This option is ignored if a space is used as the separator."
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
