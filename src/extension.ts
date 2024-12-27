@@ -16,7 +16,7 @@ function parseSetInput(input: string): { row: string, col: string, target: strin
 	if (caseInsensitive) {
 		row = row.toLowerCase();
 		col = col.toLowerCase();
-		target = target.toLowerCase();
+		/* remember target must not be lowerCased() */
 	}
 	return {
 		row: row,
