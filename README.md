@@ -21,4 +21,4 @@ There are several tunable options controlling the behavior of the extension, che
 |4. Keep last executed command												|	❌|
 |5. Partial match and case sensitivity										|	✅|
 |6. Fuzzy search															|	❌|
-|7. Move cursor to target after getting/setting								|	❌|
+|7. Move cursor to target after getting/setting								|	✅|

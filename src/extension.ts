@@ -55,36 +55,52 @@ function getColNumber(document: vscode.TextDocument, col: string): number {
 	return colNumber;
 }
 
-function __doRow(document: vscode.TextDocument, row: string, callback: (line: string, index: number) => void): void {
-    document.getText().split('\n').find((line, index) => {
-        const firstComma = line.indexOf(sep);
-        if (firstComma !== -1) {
-            let firstCell = line.substring(0, firstComma);
-            if (caseInsensitive) {
-                firstCell = firstCell.toLowerCase();
-            }
-            if (partialMatch && firstCell.includes(row) || firstCell === row) {
-                callback(line, index);
-                return true;
-            }
-        }
-    });
+/* find the matching row, move cursor to the target, and perform callback */
+function __doRow(editor: vscode.TextEditor, row: string, callback: (line: string, index: number) => void): void {
+	const document = editor.document;
+	document.getText().split('\n').find((line, index) => {
+		const firstComma = line.indexOf(sep);
+		if (firstComma !== -1) {
+			let firstCell = line.substring(0, firstComma);
+			if (caseInsensitive) {
+				firstCell = firstCell.toLowerCase();
+			}
+			if (partialMatch && firstCell.includes(row) || firstCell === row) {
+				callback(line, index);
+				return true;
+			}
+		}
+	});
 }
 
-function getRowNumber(document: vscode.TextDocument, row: string): number {
+function getRowNumber(editor: vscode.TextEditor, row: string): number {
 	let rowNumber = -1;
-	__doRow(document, row, (_, index) => {
-        rowNumber = index;
-    });
+	__doRow(editor, row, (_, index) => {
+		rowNumber = index;
+	});
 	return rowNumber;
 }
 
-function getCellValue(document: vscode.TextDocument, row: string, colNumber: number): string {
+function getCellValueAndSelection(document: vscode.TextDocument, rowNumber: number, colNumber: number): { cellVal: string, cellSelection: vscode.Selection } {
 	let cellVal = '';
-	__doRow(document, row, (line, _) => {
-        cellVal = line.split(sep)[colNumber];
-    });
-	return cellVal;
+	let charCnt = 0;
+	const targetRow = document.lineAt(rowNumber);
+	/* find the cell start */
+	targetRow.text.split(sep).find((cell, index) => {
+		if (index === colNumber) {
+			cellVal = cell;
+			return true;
+		}
+		charCnt += cell.length + 1; /* +1 for the comma */
+	});
+
+	const targetCellStart = targetRow.range.start.translate({ characterDelta: charCnt });
+	const targetCellEnd = targetCellStart.translate({ characterDelta: cellVal.length });
+	const selection = new vscode.Selection(targetCellStart, targetCellEnd);
+	return {
+		cellVal: cellVal,
+		cellSelection: selection
+	}
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -92,58 +108,51 @@ export function activate(context: vscode.ExtensionContext) {
 		// Get the active text editor
 		const editor = vscode.window.activeTextEditor;
 
-		if (editor) {
-			const document = editor.document;
-
-			const userResponse = await vscode.window.showInputBox({
-				placeHolder: 'row name, col name, cell value'
-			});
-
-			if (!userResponse) {
-				return;
-			}
-
-			/* input looks like: "SOME_RANDOM_ROW_NAME, some_random_col_name, Y"
-			 * meaning: row, col, target cell value
-			*/
-			const { row, col, target } = parseSetInput(userResponse);
-			/* search the currently opened csv file, find the target cell, and set the value */
-
-			const colNumber = getColNumber(document, col);
-			if (colNumber === -1) {
-				vscode.window.showErrorMessage(`col: ${col} not found`);
-				return;
-			}
-
-			/* then get row number */
-			const rowNumber = getRowNumber(document, row);
-			if (rowNumber === -1) {
-				vscode.window.showErrorMessage(`row: ${row} not found`);
-				return;
-			}
-
-			let cellVal = '';
-			let charCnt = 0;
-			const targetRow = document.lineAt(rowNumber);
-			/* find the cell start */
-			targetRow.text.split(sep).find((cell, index) => {
-				if (index === colNumber) {
-					cellVal = cell;
-					return true;
-				}
-				charCnt += cell.length + 1; /* +1 for the comma */
-			});
-
-			const targetCellStart = targetRow.range.start.translate({ characterDelta: charCnt });
-			const targetCellEnd = targetCellStart.translate({ characterDelta: cellVal.length });
-			const selection = new vscode.Selection(targetCellStart, targetCellEnd);
-
-
-			await editor.edit(editBuilder => {
-				editBuilder.replace(selection, target);
-			});
-			await document.save();
+		if (!editor) {
+			vscode.window.showErrorMessage('No active text editor found');
+			return;
 		}
+
+		const document = editor.document;
+		const userResponse = await vscode.window.showInputBox({
+			placeHolder: 'row name, col name, cell value'
+		});
+
+		if (!userResponse) {
+			return;
+		}
+
+		/* input looks like: "SOME_RANDOM_ROW_NAME, some_random_col_name, Y"
+		 * meaning: row, col, target cell value
+		*/
+		const { row, col, target } = parseSetInput(userResponse);
+		/* search the currently opened csv file, find the target cell, and set the value */
+
+		const colNumber = getColNumber(document, col);
+		if (colNumber === -1) {
+			vscode.window.showErrorMessage(`col: ${col} not found`);
+			return;
+		}
+
+		/* then get row number */
+		const rowNumber = getRowNumber(editor, row);
+		if (rowNumber === -1) {
+			vscode.window.showErrorMessage(`row: ${row} not found`);
+			return;
+		}
+
+		const { cellSelection } = getCellValueAndSelection(document, rowNumber, colNumber);
+
+		await editor.edit(editBuilder => {
+			editBuilder.replace(cellSelection, target);
+		});
+		await document.save();
+		/* move cursor to the target cell */
+		const targetCellStart = cellSelection.start;
+		const newTargetCellEnd = targetCellStart.translate({ characterDelta: target.length });
+		const newSelection = new vscode.Selection(targetCellStart, newTargetCellEnd);
+		editor.selection = newSelection;
+		editor.revealRange(newSelection);
 	});
 
 	const getCellValueDisposable = vscode.commands.registerCommand('extension.getCell', async function () {
@@ -169,13 +178,28 @@ export function activate(context: vscode.ExtensionContext) {
 
 			/* first get the col number */
 			const colNumber = getColNumber(document, col);
+			if (colNumber === -1) {
+				vscode.window.showErrorMessage(`col: ${col} not found`);
+				return;
+			}
+
+			/* then get row number */
+			const rowNumber = getRowNumber(editor, row);
+			if (rowNumber === -1) {
+				vscode.window.showErrorMessage(`row: ${row} not found`);
+				return;
+			}
+
 			/* then get the target cell */
-			const cellVal = getCellValue(document, row, colNumber);
+			const { cellVal, cellSelection } = getCellValueAndSelection(document, rowNumber, colNumber);
 			if (cellVal === '') {
 				vscode.window.showErrorMessage(`cell: ${row}, ${col} not found`);
 				return;
 			}
 			vscode.window.showInformationMessage(`cell value: ${cellVal}`);
+			/* move cursor to the target cell */
+			editor.selection = cellSelection;
+			editor.revealRange(cellSelection)
 		}
 	});
 	context.subscriptions.push(setCellValueDisposable);
