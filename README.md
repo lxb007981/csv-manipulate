@@ -22,3 +22,4 @@ There are several tunable options controlling the behavior of the extension, che
 |5. Partial match and case sensitivity										|	✅|
 |6. Fuzzy search															|	❌|
 |7. Move cursor to target after getting/setting								|	✅|
+|8. Autocomplete															|	❌|
