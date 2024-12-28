@@ -6,6 +6,10 @@ const trimEnabled: boolean = config.get('trimEnabled') || true;
 const partialMatch: boolean = config.get('partialMatch') || true;
 const caseInsensitive: boolean = config.get('caseInsensitive') || true;
 
+function setLastInput(context: vscode.ExtensionContext, input: string): void {
+	context.workspaceState.update('lastInput', input);
+}
+
 function parseSetInput(input: string): { row: string, col: string, target: string } {
 	let [row, col, target] = input.split(sep);
 	if (trimEnabled) {
@@ -114,14 +118,17 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 
 		const document = editor.document;
+		const lastInput = context.workspaceState.get('lastInput', '');
 		const userResponse = await vscode.window.showInputBox({
-			placeHolder: 'row name, col name, cell value'
+			placeHolder: 'row name, col name, cell value',
+			value: lastInput
 		});
 
 		if (!userResponse) {
 			return;
 		}
 
+		setLastInput(context, userResponse);
 		/* input looks like: "SOME_RANDOM_ROW_NAME, some_random_col_name, Y"
 		 * meaning: row, col, target cell value
 		*/
@@ -159,48 +166,54 @@ export function activate(context: vscode.ExtensionContext) {
 		// Get the active text editor
 		const editor = vscode.window.activeTextEditor;
 
-		if (editor) {
-			const document = editor.document;
-
-			const userResponse = await vscode.window.showInputBox({
-				placeHolder: 'row name, col name'
-			});
-
-			if (!userResponse) {
-				return;
-			}
-
-			/* input looks like: "SOME_RANDOM_ROW_NAME, some_random_col_name"
-			 * meaning: row, col
-			*/
-			const { row, col } = parseGetInput(userResponse);
-			/* search the currently opened csv file, find the target cell, and set the value */
-
-			/* first get the col number */
-			const colNumber = getColNumber(document, col);
-			if (colNumber === -1) {
-				vscode.window.showErrorMessage(`col: ${col} not found`);
-				return;
-			}
-
-			/* then get row number */
-			const rowNumber = getRowNumber(editor, row);
-			if (rowNumber === -1) {
-				vscode.window.showErrorMessage(`row: ${row} not found`);
-				return;
-			}
-
-			/* then get the target cell */
-			const { cellVal, cellSelection } = getCellValueAndSelection(document, rowNumber, colNumber);
-			if (cellVal === '') {
-				vscode.window.showErrorMessage(`cell: ${row}, ${col} not found`);
-				return;
-			}
-			vscode.window.showInformationMessage(`cell value: ${cellVal}`);
-			/* move cursor to the target cell */
-			editor.selection = cellSelection;
-			editor.revealRange(cellSelection)
+		if (!editor) {
+			vscode.window.showErrorMessage('No active text editor found');
+			return;
 		}
+		const document = editor.document;
+
+		const lastInput = context.workspaceState.get('lastInput', '');
+		const userResponse = await vscode.window.showInputBox({
+			placeHolder: 'row name, col name',
+			value: lastInput
+		});
+
+		if (!userResponse) {
+			return;
+		}
+
+		setLastInput(context, userResponse);
+
+		/* input looks like: "SOME_RANDOM_ROW_NAME, some_random_col_name"
+		 * meaning: row, col
+		*/
+		const { row, col } = parseGetInput(userResponse);
+		/* search the currently opened csv file, find the target cell, and set the value */
+
+		/* first get the col number */
+		const colNumber = getColNumber(document, col);
+		if (colNumber === -1) {
+			vscode.window.showErrorMessage(`col: ${col} not found`);
+			return;
+		}
+
+		/* then get row number */
+		const rowNumber = getRowNumber(editor, row);
+		if (rowNumber === -1) {
+			vscode.window.showErrorMessage(`row: ${row} not found`);
+			return;
+		}
+
+		/* then get the target cell */
+		const { cellVal, cellSelection } = getCellValueAndSelection(document, rowNumber, colNumber);
+		if (cellVal === '') {
+			vscode.window.showErrorMessage(`cell: ${row}, ${col} not found`);
+			return;
+		}
+		vscode.window.showInformationMessage(`cell value: ${cellVal}`);
+		/* move cursor to the target cell */
+		editor.selection = cellSelection;
+		editor.revealRange(cellSelection);
 	});
 	context.subscriptions.push(setCellValueDisposable);
 	context.subscriptions.push(getCellValueDisposable);
