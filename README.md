@@ -23,3 +23,4 @@ There are several tunable options controlling the behavior of the extension, che
 |6. Fuzzy search															|	❌|
 |7. Move cursor to target after getting/setting								|	✅|
 |8. Autocomplete															|	❌|
+|9. GUI adapt to color theme												|	❌|

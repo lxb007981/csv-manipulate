@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { CsvManipulatorViewProvider } from './csvManipulatorView';
 
 const config = vscode.workspace.getConfiguration('csv-manipulate');
 const sep: string = config.get('separator') || ',';
@@ -10,7 +11,14 @@ function setLastInput(context: vscode.ExtensionContext, input: string): void {
 	context.workspaceState.update('lastInput', input);
 }
 
+function getLastInput(context: vscode.ExtensionContext): string {
+	return context.workspaceState.get('lastInput', '');
+}
+
 function parseSetInput(input: string): { row: string, col: string, target: string } {
+	/* input looks like: "SOME_RANDOM_ROW_NAME, some_random_col_name, Y"
+	 * meaning: row, col, target cell value
+	*/
 	let [row, col, target] = input.split(sep);
 	if (trimEnabled) {
 		row = row.trim();
@@ -30,6 +38,9 @@ function parseSetInput(input: string): { row: string, col: string, target: strin
 }
 
 function parseGetInput(input: string): { row: string, col: string } {
+	/* input looks like: "SOME_RANDOM_ROW_NAME, some_random_col_name"
+	 * meaning: row, col
+	*/
 	let [row, col] = input.split(sep);
 	if (trimEnabled) {
 		row = row.trim();
@@ -107,62 +118,92 @@ function getCellValueAndSelection(document: vscode.TextDocument, rowNumber: numb
 	}
 }
 
-export function activate(context: vscode.ExtensionContext) {
-	const setCellValueDisposable = vscode.commands.registerCommand('extension.setCell', async function () {
-		// Get the active text editor
-		const editor = vscode.window.activeTextEditor;
+async function setCellValue(editor: vscode.TextEditor, userResponse: { row: string, col: string, target: string }): Promise<void> {
+	const { row, col, target } = userResponse;
+	const document = editor.document;
+	/* search the currently opened csv file, find the target cell, and set the value */
+	const colNumber = getColNumber(document, col);
+	if (colNumber === -1) {
+		vscode.window.showErrorMessage(`col: ${col} not found`);
+		return;
+	}
 
-		if (!editor) {
-			vscode.window.showErrorMessage('No active text editor found');
-			return;
-		}
+	/* then get row number */
+	const rowNumber = getRowNumber(editor, row);
+	if (rowNumber === -1) {
+		vscode.window.showErrorMessage(`row: ${row} not found`);
+		return;
+	}
 
-		const document = editor.document;
-		const lastInput = context.workspaceState.get('lastInput', '');
-		const userResponse = await vscode.window.showInputBox({
-			placeHolder: 'row name, col name, cell value',
-			value: lastInput
-		});
+	const { cellSelection } = getCellValueAndSelection(document, rowNumber, colNumber);
 
-		if (!userResponse) {
-			return;
-		}
+	await editor.edit(editBuilder => {
+		editBuilder.replace(cellSelection, target);
+	});
+	await document.save();
+	/* move cursor to the target cell */
+	const targetCellStart = cellSelection.start;
+	const newTargetCellEnd = targetCellStart.translate({ characterDelta: target.length });
+	const newSelection = new vscode.Selection(targetCellStart, newTargetCellEnd);
+	editor.selection = newSelection;
+	editor.revealRange(newSelection);
+}
 
-		setLastInput(context, userResponse);
-		/* input looks like: "SOME_RANDOM_ROW_NAME, some_random_col_name, Y"
-		 * meaning: row, col, target cell value
-		*/
-		const { row, col, target } = parseSetInput(userResponse);
-		/* search the currently opened csv file, find the target cell, and set the value */
+function getCellValue(editor: vscode.TextEditor, userResponse: { row: string, col: string }): string {
+	const document = editor.document;
+	const { row, col } = userResponse;
+	/* search the currently opened csv file, find the target cell, and set the value */
 
-		const colNumber = getColNumber(document, col);
-		if (colNumber === -1) {
-			vscode.window.showErrorMessage(`col: ${col} not found`);
-			return;
-		}
+	/* first get the col number */
+	const colNumber = getColNumber(document, col);
+	if (colNumber === -1) {
+		vscode.window.showErrorMessage(`col: ${col} not found`);
+		return '';
+	}
 
-		/* then get row number */
-		const rowNumber = getRowNumber(editor, row);
-		if (rowNumber === -1) {
-			vscode.window.showErrorMessage(`row: ${row} not found`);
-			return;
-		}
+	/* then get row number */
+	const rowNumber = getRowNumber(editor, row);
+	if (rowNumber === -1) {
+		vscode.window.showErrorMessage(`row: ${row} not found`);
+		return '';
+	}
 
-		const { cellSelection } = getCellValueAndSelection(document, rowNumber, colNumber);
+	/* then get the target cell */
+	const { cellVal, cellSelection } = getCellValueAndSelection(document, rowNumber, colNumber);
+	if (cellVal === '') {
+		vscode.window.showErrorMessage(`cell: ${row}, ${col} not found`);
+		return '';
+	}
+	vscode.window.showInformationMessage(`cell value: ${cellVal}`);
+	/* move cursor to the target cell */
+	editor.selection = cellSelection;
+	editor.revealRange(cellSelection);
+	return cellVal;
+}
 
-		await editor.edit(editBuilder => {
-			editBuilder.replace(cellSelection, target);
-		});
-		await document.save();
-		/* move cursor to the target cell */
-		const targetCellStart = cellSelection.start;
-		const newTargetCellEnd = targetCellStart.translate({ characterDelta: target.length });
-		const newSelection = new vscode.Selection(targetCellStart, newTargetCellEnd);
-		editor.selection = newSelection;
-		editor.revealRange(newSelection);
+async function setCellCommandCallback(context: vscode.ExtensionContext) {
+	// Get the active text editor
+	const editor = vscode.window.activeTextEditor;
+	
+	if (!editor) {
+		vscode.window.showErrorMessage('No active text editor found');
+		return;
+	}
+	const lastInput = getLastInput(context);
+	const userResponse = await vscode.window.showInputBox({
+		placeHolder: 'row name, col name, cell value',
+		value: lastInput
 	});
 
-	const getCellValueDisposable = vscode.commands.registerCommand('extension.getCell', async function () {
+	if (!userResponse) {
+		return;
+	}
+
+	setLastInput(context, userResponse);
+	await setCellValue(editor, parseSetInput(userResponse))
+}
+
+async function getCallCommandCallback(context: vscode.ExtensionContext) {
 		// Get the active text editor
 		const editor = vscode.window.activeTextEditor;
 
@@ -170,9 +211,8 @@ export function activate(context: vscode.ExtensionContext) {
 			vscode.window.showErrorMessage('No active text editor found');
 			return;
 		}
-		const document = editor.document;
 
-		const lastInput = context.workspaceState.get('lastInput', '');
+		const lastInput = getLastInput(context);
 		const userResponse = await vscode.window.showInputBox({
 			placeHolder: 'row name, col name',
 			value: lastInput
@@ -183,38 +223,17 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 
 		setLastInput(context, userResponse);
-
-		/* input looks like: "SOME_RANDOM_ROW_NAME, some_random_col_name"
-		 * meaning: row, col
-		*/
-		const { row, col } = parseGetInput(userResponse);
-		/* search the currently opened csv file, find the target cell, and set the value */
-
-		/* first get the col number */
-		const colNumber = getColNumber(document, col);
-		if (colNumber === -1) {
-			vscode.window.showErrorMessage(`col: ${col} not found`);
-			return;
-		}
-
-		/* then get row number */
-		const rowNumber = getRowNumber(editor, row);
-		if (rowNumber === -1) {
-			vscode.window.showErrorMessage(`row: ${row} not found`);
-			return;
-		}
-
-		/* then get the target cell */
-		const { cellVal, cellSelection } = getCellValueAndSelection(document, rowNumber, colNumber);
-		if (cellVal === '') {
-			vscode.window.showErrorMessage(`cell: ${row}, ${col} not found`);
-			return;
-		}
-		vscode.window.showInformationMessage(`cell value: ${cellVal}`);
-		/* move cursor to the target cell */
-		editor.selection = cellSelection;
-		editor.revealRange(cellSelection);
-	});
-	context.subscriptions.push(setCellValueDisposable);
-	context.subscriptions.push(getCellValueDisposable);
+		getCellValue(editor, parseGetInput(userResponse));
 }
+
+export function activate(context: vscode.ExtensionContext) {
+	const setCellValueDisposable = vscode.commands.registerCommand('extension.setCell', setCellCommandCallback.bind(null, context));
+	const getCellValueDisposable = vscode.commands.registerCommand('extension.getCell', getCallCommandCallback.bind(null, context));
+
+	context.subscriptions.push(setCellValueDisposable, getCellValueDisposable);
+
+	const csvManipulatorViewProvider = new CsvManipulatorViewProvider(context);
+	context.subscriptions.push(vscode.window.registerWebviewViewProvider(CsvManipulatorViewProvider.viewId, csvManipulatorViewProvider));
+}
+
+export { setCellValue, getCellValue, setLastInput, getLastInput }
