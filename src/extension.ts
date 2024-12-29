@@ -15,11 +15,7 @@ function getLastInput(context: vscode.ExtensionContext): string {
 	return context.workspaceState.get('lastInput', '');
 }
 
-function parseSetInput(input: string): { row: string, col: string, target: string } {
-	/* input looks like: "SOME_RANDOM_ROW_NAME, some_random_col_name, Y"
-	 * meaning: row, col, target cell value
-	*/
-	let [row, col, target] = input.split(sep);
+function processSetInput(row: string, col: string, target: string): { row: string, col: string, target: string } {
 	if (trimEnabled) {
 		row = row.trim();
 		col = col.trim();
@@ -37,11 +33,15 @@ function parseSetInput(input: string): { row: string, col: string, target: strin
 	};
 }
 
-function parseGetInput(input: string): { row: string, col: string } {
-	/* input looks like: "SOME_RANDOM_ROW_NAME, some_random_col_name"
-	 * meaning: row, col
+function parseSetInput(input: string): { row: string, col: string, target: string } {
+	/* input looks like: "SOME_RANDOM_ROW_NAME, some_random_col_name, Y"
+	 * meaning: row, col, target cell value
 	*/
-	let [row, col] = input.split(sep);
+	let [row, col, target] = input.split(sep);
+	return processSetInput(row, col, target);
+}
+
+function processGetInput(row: string, col: string): { row: string, col: string } {
 	if (trimEnabled) {
 		row = row.trim();
 		col = col.trim();
@@ -54,6 +54,14 @@ function parseGetInput(input: string): { row: string, col: string } {
 		row: row,
 		col: col
 	};
+}
+
+function parseGetInput(input: string): { row: string, col: string } {
+	/* input looks like: "SOME_RANDOM_ROW_NAME, some_random_col_name"
+	 * meaning: row, col
+	*/
+	let [row, col] = input.split(sep);
+	return processGetInput(row, col);
 }
 
 function getColNumber(document: vscode.TextDocument, col: string): number {
@@ -184,7 +192,7 @@ function getCellValue(editor: vscode.TextEditor, userResponse: { row: string, co
 async function setCellCommandCallback(context: vscode.ExtensionContext) {
 	// Get the active text editor
 	const editor = vscode.window.activeTextEditor;
-	
+
 	if (!editor) {
 		vscode.window.showErrorMessage('No active text editor found');
 		return;
@@ -204,26 +212,26 @@ async function setCellCommandCallback(context: vscode.ExtensionContext) {
 }
 
 async function getCallCommandCallback(context: vscode.ExtensionContext) {
-		// Get the active text editor
-		const editor = vscode.window.activeTextEditor;
+	// Get the active text editor
+	const editor = vscode.window.activeTextEditor;
 
-		if (!editor) {
-			vscode.window.showErrorMessage('No active text editor found');
-			return;
-		}
+	if (!editor) {
+		vscode.window.showErrorMessage('No active text editor found');
+		return;
+	}
 
-		const lastInput = getLastInput(context);
-		const userResponse = await vscode.window.showInputBox({
-			placeHolder: 'row name, col name',
-			value: lastInput
-		});
+	const lastInput = getLastInput(context);
+	const userResponse = await vscode.window.showInputBox({
+		placeHolder: 'row name, col name',
+		value: lastInput
+	});
 
-		if (!userResponse) {
-			return;
-		}
+	if (!userResponse) {
+		return;
+	}
 
-		setLastInput(context, userResponse);
-		getCellValue(editor, parseGetInput(userResponse));
+	setLastInput(context, userResponse);
+	getCellValue(editor, parseGetInput(userResponse));
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -236,4 +244,4 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.window.registerWebviewViewProvider(CsvManipulatorViewProvider.viewId, csvManipulatorViewProvider));
 }
 
-export { setCellValue, getCellValue, setLastInput, getLastInput }
+export { setCellValue, getCellValue, setLastInput, getLastInput, processSetInput, processGetInput }

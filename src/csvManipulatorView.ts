@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { setCellValue, getCellValue, setLastInput, getLastInput } from './extension';
+import { setCellValue, getCellValue, setLastInput, getLastInput, processSetInput, processGetInput } from './extension';
 
 class CsvManipulatorViewProvider implements vscode.WebviewViewProvider {
 	public static readonly viewId = 'csv-manipulate-view';
@@ -31,11 +31,16 @@ class CsvManipulatorViewProvider implements vscode.WebviewViewProvider {
 				case 'csv-manipulate-get':
 					this._view.webview.postMessage({
 						command: 'csv-manipulate-get',
-						cellValue: getCellValue(activeEditor, message.userResponse)
+						cellValue: getCellValue(activeEditor,
+							processGetInput(message.userResponse.row,
+								message.userResponse.col))
 					});
 					break;
 				case 'csv-manipulate-set':
-					setCellValue(activeEditor, message.userResponse);
+					setCellValue(activeEditor,
+						processSetInput(message.userResponse.row,
+							message.userResponse.col,
+							message.userResponse.target));
 					break;
 			}
 		});
