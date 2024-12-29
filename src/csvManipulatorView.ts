@@ -1,0 +1,82 @@
+import * as vscode from 'vscode';
+import { setCellValue, getCellValue, setLastInput, getLastInput } from './extension';
+
+class CsvManipulatorViewProvider implements vscode.WebviewViewProvider {
+	public static readonly viewId = 'csv-manipulate-view';
+	private readonly _extensionUri: vscode.Uri;
+	private _view?: vscode.WebviewView;
+	private _extensionContext: vscode.ExtensionContext;
+	constructor(extensionContext: vscode.ExtensionContext) {
+		this._extensionUri = extensionContext.extensionUri;
+		this._extensionContext = extensionContext;
+	}
+	public resolveWebviewView(webviewView: vscode.WebviewView) {
+		webviewView.webview.options = {
+			enableScripts: true,
+			localResourceRoots: [this._extensionUri]
+		};
+		this._view = webviewView;
+		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+		webviewView.webview.onDidReceiveMessage(message => {
+			const activeEditor = vscode.window.activeTextEditor;
+			if (!activeEditor) {
+				vscode.window.showErrorMessage('No active editor found');
+				return;
+			}
+			if (!this._view) {
+				return;
+			}
+			setLastInput(this._extensionContext, Object.values(message.userResponse).join(', '));
+			switch (message.command) {
+				case 'csv-manipulate-get':
+					this._view.webview.postMessage({
+						command: 'csv-manipulate-get',
+						cellValue: getCellValue(activeEditor, message.userResponse)
+					});
+					break;
+				case 'csv-manipulate-set':
+					setCellValue(activeEditor, message.userResponse);
+					break;
+			}
+		});
+		webviewView.onDidChangeVisibility(() => {
+			this._updateWebview();
+		});
+		this._updateWebview();
+	}
+	private _updateWebview() {
+		if (!this._view || !this._view.visible) {
+			return;
+		}
+		this._view.webview.postMessage({
+			command: 'csv-manipulate-last-input',
+			lastInput: getLastInput(this._extensionContext)
+		});
+
+	}
+	private _getHtmlForWebview(webview: vscode.Webview) {
+		const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'src', 'media', 'main.js'));
+		const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'src', 'media', 'main.css'));
+		return `<!DOCTYPE html>
+			<html lang="en">
+			<head>
+				<meta charset="UTF-8">
+				<meta name="viewport" content="width=device-width, initial-scale=1.0">
+				<link href="${styleUri}" rel="stylesheet">
+				<title>CSV Manipulator</title>
+			</head>
+			<body>
+				<div id="root">
+					<input type="text" id="csv-manipulate-row" placeholder="row">
+					<input type="text" id="csv-manipulate-col" placeholder="col">
+					<input type="text" id="csv-manipulate-target" placeholder="target">
+					<button id="csv-manipulate-get-button">Get</button>
+					<button id="csv-manipulate-set-button">Set</button>
+				</div>
+				<script src="${scriptUri}"></script>
+			</body>
+			</html>`;
+	}
+}
+
+export { CsvManipulatorViewProvider };
