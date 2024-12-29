@@ -16,11 +16,11 @@ There are several tunable options controlling the behavior of the extension, che
 | Feature    | Offered |
 | -------- 	 | ------- |
 |1. Settings page, to control trim enabled, separator other than ',' etc. 	|	✅|
-|2. GUI support(maybe?)													 	|	❌|
+|2. GUI support(maybe?)													 	|	✅|
 |3. Support modify csv file by any row/col, besides 1st row/col.			|	❌|
 |4. Keep last executed command												|	✅|
 |5. Partial match and case sensitivity										|	✅|
-|6. Fuzzy search															|	❌|
+|6. Fuzzy search															|	🏃|
 |7. Move cursor to target after getting/setting								|	✅|
-|8. Autocomplete															|	❌|
+|8. Autocomplete															|	🏃|
 |9. GUI adapt to color theme												|	❌|
