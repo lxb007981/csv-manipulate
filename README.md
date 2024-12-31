@@ -1,13 +1,21 @@
 # CSV-Manipulate
 
-Get/Set a cell's value in a csv file using row/column names. For now, only separator ',' is supported.
+Get/Set a cell's value in a csv file using row/column names.
 
 # Demo
 
+## GUI
+![gui_demo](gui_demo.gif)
+
+## CLI
 ![demo](demo.gif)
 
 # Usage
-`ctrl+shift+p` and type `get cell` or `set cell`. You will be prompted to input `row-name, col-name [,target-value]`. Note that the row name, col name, target value will be trimmed first.
+
+1. GUI available now. Click the sidebar icon and enjoy.
+
+2. CLI usage:
+`Ctrl+Shift+P` and type `get cell` or `set cell`. You will be prompted to input `row-name, col-name [,target-value]`. By default the row name and col name will be trimmed first.
 
 # Options
 There are several tunable options controlling the behavior of the extension, check details in the extension settings page.
