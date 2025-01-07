@@ -155,6 +155,7 @@ async function setCellValue(editor: vscode.TextEditor, userResponse: { row: stri
 	const newSelection = new vscode.Selection(targetCellStart, newTargetCellEnd);
 	editor.selection = newSelection;
 	editor.revealRange(newSelection);
+	await vscode.window.showTextDocument(document, {preview: false, preserveFocus: false});
 }
 
 function getCellValue(editor: vscode.TextEditor, userResponse: { row: string, col: string }): string {
@@ -186,6 +187,7 @@ function getCellValue(editor: vscode.TextEditor, userResponse: { row: string, co
 	/* move cursor to the target cell */
 	editor.selection = cellSelection;
 	editor.revealRange(cellSelection);
+	vscode.window.showTextDocument(document, {preview: false, preserveFocus: false});
 	return cellVal;
 }
 
