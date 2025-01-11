@@ -4,3 +4,4 @@
 *.gif
 .vscode
 **/*.csv
+test/
