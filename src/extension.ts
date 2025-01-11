@@ -38,10 +38,17 @@ function processSetInput(row: string, col: string, searchRow: number, searchCol:
 
 /* CLI input parser */
 function parseSetInput(input: string): { row: string, col: string, searchRow: number, searchCol: number, target: string } {
-	/* input looks like: "SOME_RANDOM_ROW_NAME, some_random_col_name, Y[, searchRow, searchCol]"
+	/* input looks like: "SOME_RANDOM_ROW_NAME, some_random_col_name[, searchRow, searchCol], Y"
 	 * meaning: row, col, target cell value
 	*/
-	let [row, col, target, searchRow, searchCol] = input.split(sep);
+	const segs = input.split(sep);
+	if (segs.length == 3) {
+		const target = segs.pop()!;
+		segs.push("1");
+		segs.push("1");
+		segs.push(target);
+	}
+	let [row, col, searchRow, searchCol, target] = segs;
 
 	const searchRowNum = Number(searchRow) || 1;
 	const searchColNum = Number(searchCol) || 1;
