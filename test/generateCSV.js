@@ -18,7 +18,7 @@ function generateCSV(rows, cols) {
         csvContent += `,${getRandomPrefix()}_col_${i}`;
     }
     csvContent += '\n';
-    
+
     // Generate the data rows
     for (let i = 1; i <= rows; i++) {
         csvContent += `${getRandomPrefix()}_row_${i}`;
@@ -31,14 +31,62 @@ function generateCSV(rows, cols) {
     return csvContent;
 }
 
+function generateCSV_row2(rows, cols) {
+    let csvContent = 'nonsense';
+    for (let i = 1; i <= cols; i++) {
+        csvContent += `,nonsense`;
+    }
+
+    csvContent += '\nresource';
+
+    // Generate the header row
+    for (let i = 1; i <= cols; i++) {
+        csvContent += `,${getRandomPrefix()}_col_${i}`;
+    }
+    csvContent += '\n';
+
+    // Generate the data rows
+    for (let i = 1; i <= rows; i++) {
+        csvContent += `${getRandomPrefix()}_row_${i}`;
+        for (let j = 1; j <= cols; j++) {
+            csvContent += `,${getRandomYN()}`;
+        }
+        csvContent += '\n';
+    }
+
+    return csvContent;
+}
+
+// Function to generate the CSV content
+function generateCSV_col2(rows, cols) {
+    let csvContent = 'nonsense,resource';
+
+    // Generate the header row
+    for (let i = 1; i <= cols; i++) {
+        csvContent += `,${getRandomPrefix()}_col_${i}`;
+    }
+    csvContent += '\n';
+
+    // Generate the data rows
+    for (let i = 1; i <= rows; i++) {
+        csvContent += `nonsense,${getRandomPrefix()}_row_${i}`;
+        for (let j = 1; j <= cols; j++) {
+            csvContent += `,${getRandomYN()}`;
+        }
+        csvContent += '\n';
+    }
+
+    return csvContent;
+}
+
 // Generate the CSV content
 const csvContent = generateCSV(rows, cols);
+const csvContent_row2 = generateCSV_row2(rows, cols);
+const csvContent_col2 = generateCSV_col2(rows, cols);
 const outputPath = `${__dirname}/output.csv`;
+const outputPath_row2 = `${__dirname}/output_row2.csv`;
+const outputPath_col2 = `${__dirname}/output_col2.csv`;
 // Write the CSV content to a file
-fs.writeFile(outputPath, csvContent, (err) => {
-    if (err) {
-        console.error('Error writing CSV file:', err);
-    } else {
-        console.log(`CSV file generated successfully: ${outputPath}`);
-    }
-});
+fs.writeFileSync(outputPath, csvContent);
+fs.writeFileSync(outputPath_row2, csvContent_row2);
+fs.writeFileSync(outputPath_col2, csvContent_col2);
