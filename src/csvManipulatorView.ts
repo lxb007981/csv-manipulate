@@ -76,15 +76,23 @@ class CsvManipulatorViewProvider implements vscode.WebviewViewProvider {
 			</head>
 			<body>
 				<div id="root">
-					<input type="text" id="csv-manipulate-row" placeholder="row">
-					<input type="text" id="csv-manipulate-col" placeholder="col">
-					<input type="text" id="csv-manipulate-search-row" placeholder="1">
-					<label> 搜索第x行，默认为1</label>
-					<input type="text" id="csv-manipulate-search-col" placeholder="1">
-					<label> 搜索第y列，默认为1</label>
-					<input type="text" id="csv-manipulate-target" placeholder="target">
-					<button id="csv-manipulate-get-button">Get</button>
-					<button id="csv-manipulate-set-button">Set</button>
+					<div>
+						<input type="text" id="csv-manipulate-row" placeholder="row">
+						<input type="text" id="csv-manipulate-col" placeholder="col">
+					</div>
+					<div>
+						<input type="text" id="csv-manipulate-search-row" placeholder="1">
+						<label> 搜索第x行，默认为1</label>
+					</div>
+					<div>
+						<input type="text" id="csv-manipulate-search-col" placeholder="1">
+						<label> 搜索第y列，默认为1</label>
+					</div>
+					<div>
+						<input type="text" id="csv-manipulate-target" placeholder="target">
+						<button id="csv-manipulate-get-button">Get</button>
+						<button id="csv-manipulate-set-button">Set</button>
+					</div>
 				</div>
 				<script src="${scriptUri}"></script>
 			</body>
