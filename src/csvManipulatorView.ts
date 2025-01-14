@@ -27,6 +27,24 @@ class CsvManipulatorViewProvider implements vscode.WebviewViewProvider {
 				return;
 			}
 			setLastInput(this._extensionContext, Object.values(message.userResponse).join(', '));
+			let searchRow = 1;
+			if (message.userResponse.searchRow) {
+				searchRow = Number(message.userResponse.searchRow);
+				if (isNaN(searchRow)) {
+					vscode.window.showErrorMessage('Invalid search row');
+					return;
+				}
+			}
+
+			let searchCol = 1;
+			if (message.userResponse.searchCol) {
+				searchCol = Number(message.userResponse.searchCol);
+				if (isNaN(searchCol)) {
+					vscode.window.showErrorMessage('Invalid search col');
+					return;
+				}
+			}
+
 			switch (message.command) {
 				case 'csv-manipulate-get':
 					this._view.webview.postMessage({
@@ -34,8 +52,8 @@ class CsvManipulatorViewProvider implements vscode.WebviewViewProvider {
 						cellValue: getCellValue(activeEditor,
 							processGetInput(message.userResponse.row,
 								message.userResponse.col,
-								Number(message.userResponse.searchRow),
-								Number(message.userResponse.searchCol)))
+								searchRow,
+								searchCol))
 					});
 					break;
 				case 'csv-manipulate-set':

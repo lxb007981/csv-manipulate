@@ -37,7 +37,7 @@ function processSetInput(row: string, col: string, searchRow: number, searchCol:
 }
 
 /* CLI input parser */
-function parseSetInput(input: string): { row: string, col: string, searchRow: number, searchCol: number, target: string } {
+function parseSetInput(input: string): { row: string, col: string, searchRow: number, searchCol: number, target: string } | undefined {
 	/* input looks like: "SOME_RANDOM_ROW_NAME, some_random_col_name[, searchRow, searchCol], Y"
 	 * meaning: row, col, target cell value
 	*/
@@ -50,8 +50,17 @@ function parseSetInput(input: string): { row: string, col: string, searchRow: nu
 	}
 	let [row, col, searchRow, searchCol, target] = segs;
 
-	const searchRowNum = Number(searchRow) || 1;
-	const searchColNum = Number(searchCol) || 1;
+	const searchRowNum = Number(searchRow);
+	const searchColNum = Number(searchCol);
+	if (isNaN(searchRowNum)) {
+		vscode.window.showErrorMessage('Invalid search row');
+		return;
+	}
+	if (isNaN(searchColNum)) {
+		vscode.window.showErrorMessage('Invalid search col');
+		return;
+	}
+
 	return processSetInput(row, col, searchRowNum, searchColNum, target);
 }
 
@@ -74,13 +83,27 @@ function processGetInput(row: string, col: string, searchRow: number, searchCol:
 }
 
 /* CLI input parser */
-function parseGetInput(input: string): { row: string, col: string, searchRow: number, searchCol: number } {
+function parseGetInput(input: string): { row: string, col: string, searchRow: number, searchCol: number } | undefined {
 	/* input looks like: "SOME_RANDOM_ROW_NAME, some_random_col_name[, searchRow, searchCol]"
 	 * meaning: row, col
 	*/
 	let [row, col, searchRow, searchCol] = input.split(sep);
-	const searchRowNum = Number(searchRow) || 1;
-	const searchColNum = Number(searchCol) || 1;
+	let searchRowNum = 1;
+	let searchColNum = 1;
+	if (searchRow) {
+		searchRowNum = Number(searchRow);
+		if (isNaN(searchRowNum)) {
+			vscode.window.showErrorMessage('Invalid search row');
+			return;
+		}
+	}
+	if (searchCol) {
+		searchColNum = Number(searchCol);
+		if (isNaN(searchColNum)) {
+			vscode.window.showErrorMessage('Invalid search col');
+			return;
+		}
+	}
 	return processGetInput(row, col, searchRowNum, searchColNum);
 }
 
@@ -236,7 +259,11 @@ async function setCellCommandCallback(context: vscode.ExtensionContext) {
 	}
 
 	setLastInput(context, userResponse);
-	await setCellValue(editor, parseSetInput(userResponse))
+	const parsedSetInput = parseSetInput(userResponse);
+	if (!parsedSetInput) {
+		return;
+	}
+	await setCellValue(editor, parsedSetInput);
 }
 
 async function getCallCommandCallback(context: vscode.ExtensionContext) {
@@ -259,7 +286,11 @@ async function getCallCommandCallback(context: vscode.ExtensionContext) {
 	}
 
 	setLastInput(context, userResponse);
-	getCellValue(editor, parseGetInput(userResponse));
+	const parsedGetInput = parseGetInput(userResponse);
+	if (!parsedGetInput) {
+		return;
+	}
+	getCellValue(editor, parsedGetInput);
 }
 
 export function activate(context: vscode.ExtensionContext) {
