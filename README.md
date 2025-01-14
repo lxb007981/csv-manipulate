@@ -15,7 +15,7 @@ Get/Set a cell's value in a csv file using row/column names.
 1. GUI available now. Click the sidebar icon and enjoy.
 
 2. CLI usage:
-`Ctrl+Shift+P` and type `get cell` or `set cell`. You will be prompted to input `row-name, col-name [,target-value]`. By default the row name and col name will be trimmed first.
+`Ctrl+Shift+P` and type `get cell` or `set cell`. You will be prompted to input `row-name, col-name [[, searchRow, searchCol], target-value]`. By default the row name and col name will be trimmed first.
 
 # Options
 There are several tunable options controlling the behavior of the extension, check details in the extension settings page.
