@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { setCellValue, getCellValue, setLastInput, getLastInput, processSetInput, processGetInput } from './extension';
+import { setCellValue, getCellValue, setLastInput, getLastInput, processSetInput, processGetInput, isValidIndex } from './extension';
 
 class CsvManipulatorViewProvider implements vscode.WebviewViewProvider {
 	public static readonly viewId = 'csv-manipulate-view';
@@ -30,7 +30,7 @@ class CsvManipulatorViewProvider implements vscode.WebviewViewProvider {
 			let searchRow = 1;
 			if (message.userResponse.searchRow) {
 				searchRow = Number(message.userResponse.searchRow);
-				if (isNaN(searchRow)) {
+				if (!isValidIndex(searchRow)) {
 					vscode.window.showErrorMessage('Invalid search row');
 					return;
 				}
@@ -39,7 +39,7 @@ class CsvManipulatorViewProvider implements vscode.WebviewViewProvider {
 			let searchCol = 1;
 			if (message.userResponse.searchCol) {
 				searchCol = Number(message.userResponse.searchCol);
-				if (isNaN(searchCol)) {
+				if (!isValidIndex(searchCol)) {
 					vscode.window.showErrorMessage('Invalid search col');
 					return;
 				}

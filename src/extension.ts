@@ -36,6 +36,10 @@ function processSetInput(row: string, col: string, searchRow: number, searchCol:
 	};
 }
 
+function isValidIndex(num: number) {
+	return Number.isInteger(num) && num >= 1
+}
+
 /* CLI input parser */
 function parseSetInput(input: string): { row: string, col: string, searchRow: number, searchCol: number, target: string } | undefined {
 	/* input looks like: "SOME_RANDOM_ROW_NAME, some_random_col_name[, searchRow, searchCol], Y"
@@ -52,11 +56,11 @@ function parseSetInput(input: string): { row: string, col: string, searchRow: nu
 
 	const searchRowNum = Number(searchRow);
 	const searchColNum = Number(searchCol);
-	if (isNaN(searchRowNum)) {
+	if (!isValidIndex(searchRowNum)) {
 		vscode.window.showErrorMessage('Invalid search row');
 		return;
 	}
-	if (isNaN(searchColNum)) {
+	if (!isValidIndex(searchColNum)) {
 		vscode.window.showErrorMessage('Invalid search col');
 		return;
 	}
@@ -92,14 +96,14 @@ function parseGetInput(input: string): { row: string, col: string, searchRow: nu
 	let searchColNum = 1;
 	if (searchRow) {
 		searchRowNum = Number(searchRow);
-		if (isNaN(searchRowNum)) {
+		if (!isValidIndex(searchRowNum)) {
 			vscode.window.showErrorMessage('Invalid search row');
 			return;
 		}
 	}
 	if (searchCol) {
 		searchColNum = Number(searchCol);
-		if (isNaN(searchColNum)) {
+		if (!isValidIndex(searchColNum)) {
 			vscode.window.showErrorMessage('Invalid search col');
 			return;
 		}
@@ -124,25 +128,38 @@ function getColNumber(document: vscode.TextDocument, col: string, searchRow: num
 /* by the target column, find the matching row, move cursor to the target, and perform callback */
 function __doRow(editor: vscode.TextEditor, row: string, searchCol: number, callback: (line: string, index: number) => void): void {
 	const document = editor.document;
-	document.getText().split('\n').find((line, index) => {
+	const lines = document.getText().split('\n')
+	for (let index = 1; index < lines.length; index += 1) {
+		const line = lines[index];
 		let cellStart = 0;
 		let cellEnd = 0;
+		let curCol = 1;
 		while (cellStart < line.length) {
 			cellEnd = line.indexOf(sep, cellStart);
 			if (cellEnd === -1) {
 				cellEnd = line.length;
 			}
-			let searchedCell = line.substring(cellStart, cellEnd);
-			if (caseInsensitive) {
-				searchedCell = searchedCell.toLowerCase();
-			}
-			if (partialMatch && searchedCell.includes(row) || searchedCell === row) {
-				callback(line, index);
-				return true;
+			if (curCol == searchCol) {
+				break;
 			}
 			cellStart = cellEnd + 1;
+			curCol += 1
 		}
-	});
+
+		/* continue searching the next row */
+		if (curCol != searchCol || cellStart >= line.length) {
+			continue;
+		}
+
+		let searchedCell = line.substring(cellStart, cellEnd);
+		if (caseInsensitive) {
+			searchedCell = searchedCell.toLowerCase();
+		}
+		if (partialMatch && searchedCell.includes(row) || searchedCell === row) {
+			callback(line, index);
+			break;
+		}
+	}
 }
 
 function getRowNumber(editor: vscode.TextEditor, row: string, searchCol: number): number {
@@ -303,4 +320,4 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.window.registerWebviewViewProvider(CsvManipulatorViewProvider.viewId, csvManipulatorViewProvider));
 }
 
-export { setCellValue, getCellValue, setLastInput, getLastInput, processSetInput, processGetInput }
+export { setCellValue, getCellValue, setLastInput, getLastInput, processSetInput, processGetInput, isValidIndex }
