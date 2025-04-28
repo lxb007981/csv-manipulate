@@ -26,7 +26,7 @@ class CsvManipulatorViewProvider implements vscode.WebviewViewProvider {
 			if (!this._view) {
 				return;
 			}
-			setLastInput(this._extensionContext, Object.values(message.userResponse).join(', '));
+			setLastInput(this._extensionContext, message.userResponse);
 			let searchRow = 1;
 			if (message.userResponse.searchRow) {
 				searchRow = Number(message.userResponse.searchRow);
@@ -49,20 +49,11 @@ class CsvManipulatorViewProvider implements vscode.WebviewViewProvider {
 				case 'csv-manipulate-get':
 					this._view.webview.postMessage({
 						command: 'csv-manipulate-get',
-						cellValue: getCellValue(activeEditor,
-							processGetInput(message.userResponse.row,
-								message.userResponse.col,
-								searchRow,
-								searchCol))
+						cellValue: getCellValue(activeEditor, processGetInput(message.userResponse))
 					});
 					break;
 				case 'csv-manipulate-set':
-					setCellValue(activeEditor,
-						processSetInput(message.userResponse.row,
-							message.userResponse.col,
-							Number(message.userResponse.searchRow),
-							Number(message.userResponse.searchCol),
-							message.userResponse.target))
+					setCellValue(activeEditor, processSetInput(message.userResponse))
 					break;
 			}
 		});
@@ -110,6 +101,10 @@ class CsvManipulatorViewProvider implements vscode.WebviewViewProvider {
 						<input type="text" id="csv-manipulate-target" placeholder="target">
 						<button id="csv-manipulate-get-button">Get</button>
 						<button id="csv-manipulate-set-button">Set</button>
+					</div>
+					<div>
+						<input type="checkbox" id="csv-manipulate-partial-match" checked />
+						<label for="csv-manipulate-partial-match"> 部分匹配</label>
 					</div>
 				</div>
 				<script src="${scriptUri}"></script>

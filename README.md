@@ -7,15 +7,9 @@ Get/Set a cell's value in a csv file using row/column names.
 ## GUI
 ![gui_demo](gui_demo.gif)
 
-## CLI
-![demo](demo.gif)
-
 # Usage
 
 1. GUI available now. Click the sidebar icon and enjoy.
-
-2. CLI usage:
-`Ctrl+Shift+P` and type `get cell` or `set cell`. You will be prompted to input `row-name, col-name [[, searchRow, searchCol], target-value]`. By default the row name and col name will be trimmed first.
 
 # Options
 There are several tunable options controlling the behavior of the extension, check details in the extension settings page.
@@ -31,3 +25,8 @@ There are several tunable options controlling the behavior of the extension, che
 |6. Fuzzy search															|	❌|
 |7. Move cursor to target after getting/setting								|	✅|
 |8. Autocomplete															|	❌|
+
+# Changelog
+## v0.1.0
+1. *Breaking* Remove CLI.
+2. Move `partialMatch` option to the sidebar panel.

@@ -4,114 +4,59 @@ import { CsvManipulatorViewProvider } from './csvManipulatorView';
 const config = vscode.workspace.getConfiguration('csv-manipulate');
 const sep: string = config.get('separator') || ',';
 const trimEnabled: boolean = config.get('trimEnabled') || true;
-const partialMatch: boolean = config.get('partialMatch') || true;
 const caseInsensitive: boolean = config.get('caseInsensitive') || true;
 
-function setLastInput(context: vscode.ExtensionContext, input: string): void {
-	context.workspaceState.update('lastInput', input);
+interface UserResponse {
+	row: string;
+	col: string;
+	searchRow: number;
+	searchCol: number;
+	target: string;
+	partialMatch: boolean
 }
 
-function getLastInput(context: vscode.ExtensionContext): string {
-	return context.workspaceState.get('lastInput', '');
+function setLastInput(context: vscode.ExtensionContext, userResponse: UserResponse): void {
+	context.workspaceState.update('lastInput', userResponse);
 }
 
-/* unified entry for cli and gui */
-function processSetInput(row: string, col: string, searchRow: number, searchCol: number, target: string): { row: string, col: string, target: string, searchRow: number, searchCol: number } {
+function getLastInput(context: vscode.ExtensionContext): UserResponse | undefined {
+	return context.workspaceState.get('lastInput');
+}
+
+function processSetInput(userSetInput: UserResponse): UserResponse {
+	let res = userSetInput;
 	if (trimEnabled) {
-		row = row.trim();
-		col = col.trim();
-		target = target.trim();
+		res.row = res.row.trim();
+		res.col = res.col.trim();
+		res.target = res.target.trim();
 	}
 	if (caseInsensitive) {
-		row = row.toLowerCase();
-		col = col.toLowerCase();
-		/* remember target must not be lowerCased() */
+		res.row = res.row.toLowerCase();
+		res.col = res.col.toLowerCase();
+		/* remember target must NOT be lowerCased() */
 	}
-	return {
-		row: row,
-		col: col,
-		searchRow: searchRow,
-		searchCol: searchCol,
-		target: target,
-	};
+	return res;
 }
 
 function isValidIndex(num: number) {
 	return Number.isInteger(num) && num >= 1
 }
 
-/* CLI input parser */
-function parseSetInput(input: string): { row: string, col: string, searchRow: number, searchCol: number, target: string } | undefined {
-	/* input looks like: "SOME_RANDOM_ROW_NAME, some_random_col_name[, searchRow, searchCol], Y"
-	 * meaning: row, col, target cell value
-	*/
-	const segs = input.split(sep);
-	if (segs.length == 3) {
-		const target = segs.pop()!;
-		segs.push("1");
-		segs.push("1");
-		segs.push(target);
-	}
-	let [row, col, searchRow, searchCol, target] = segs;
-
-	const searchRowNum = Number(searchRow);
-	const searchColNum = Number(searchCol);
-	if (!isValidIndex(searchRowNum)) {
-		vscode.window.showErrorMessage('Invalid search row');
-		return;
-	}
-	if (!isValidIndex(searchColNum)) {
-		vscode.window.showErrorMessage('Invalid search col');
-		return;
-	}
-
-	return processSetInput(row, col, searchRowNum, searchColNum, target);
-}
-
 /* unified entry for cli and gui */
-function processGetInput(row: string, col: string, searchRow: number, searchCol: number): { row: string, col: string, searchRow: number, searchCol: number } {
+function processGetInput(userGetInput: UserResponse): UserResponse {
+	let res = userGetInput;
 	if (trimEnabled) {
-		row = row.trim();
-		col = col.trim();
+		res.row = res.row.trim();
+		res.col = res.col.trim();
 	}
 	if (caseInsensitive) {
-		row = row.toLowerCase();
-		col = col.toLowerCase();
+		res.row = res.row.toLowerCase();
+		res.col = res.col.toLowerCase();
 	}
-	return {
-		row: row,
-		col: col,
-		searchRow: searchRow,
-		searchCol: searchCol
-	};
+	return res;
 }
 
-/* CLI input parser */
-function parseGetInput(input: string): { row: string, col: string, searchRow: number, searchCol: number } | undefined {
-	/* input looks like: "SOME_RANDOM_ROW_NAME, some_random_col_name[, searchRow, searchCol]"
-	 * meaning: row, col
-	*/
-	let [row, col, searchRow, searchCol] = input.split(sep);
-	let searchRowNum = 1;
-	let searchColNum = 1;
-	if (searchRow) {
-		searchRowNum = Number(searchRow);
-		if (!isValidIndex(searchRowNum)) {
-			vscode.window.showErrorMessage('Invalid search row');
-			return;
-		}
-	}
-	if (searchCol) {
-		searchColNum = Number(searchCol);
-		if (!isValidIndex(searchColNum)) {
-			vscode.window.showErrorMessage('Invalid search col');
-			return;
-		}
-	}
-	return processGetInput(row, col, searchRowNum, searchColNum);
-}
-
-function getColNumber(document: vscode.TextDocument, col: string, searchRow: number): number {
+function getColNumber(document: vscode.TextDocument, col: string, searchRow: number, partialMatch: boolean): number {
 	let colNumber = -1;
 	document.lineAt(searchRow - 1).text.split(sep).find((cell, index) => {
 		if (caseInsensitive) {
@@ -126,7 +71,7 @@ function getColNumber(document: vscode.TextDocument, col: string, searchRow: num
 }
 
 /* by the target column, find the matching row, move cursor to the target, and perform callback */
-function __doRow(editor: vscode.TextEditor, row: string, searchCol: number, callback: (line: string, index: number) => void): void {
+function __doRow(editor: vscode.TextEditor, row: string, searchCol: number, callback: (line: string, index: number) => void, partialMatch: boolean): void {
 	const document = editor.document;
 	const lines = document.getText().split('\n')
 	for (let index = 1; index < lines.length; index += 1) {
@@ -162,11 +107,11 @@ function __doRow(editor: vscode.TextEditor, row: string, searchCol: number, call
 	}
 }
 
-function getRowNumber(editor: vscode.TextEditor, row: string, searchCol: number): number {
+function getRowNumber(editor: vscode.TextEditor, row: string, searchCol: number, partialMatch: boolean): number {
 	let rowNumber = -1;
 	__doRow(editor, row, searchCol, (_, index) => {
 		rowNumber = index;
-	});
+	}, partialMatch);
 	return rowNumber;
 }
 
@@ -192,18 +137,18 @@ function getCellValueAndSelection(document: vscode.TextDocument, rowNumber: numb
 	}
 }
 
-async function setCellValue(editor: vscode.TextEditor, userResponse: { row: string, col: string, searchRow: number, searchCol: number, target: string }): Promise<void> {
-	const { row, col, target, searchRow, searchCol } = userResponse;
+async function setCellValue(editor: vscode.TextEditor, userResponse: { row: string, col: string, searchRow: number, searchCol: number, target: string, partialMatch: boolean }): Promise<void> {
+	const { row, col, target, searchRow, searchCol, partialMatch } = userResponse;
 	const document = editor.document;
 	/* search the currently opened csv file, find the target cell, and set the value */
-	const colNumber = getColNumber(document, col, searchRow);
+	const colNumber = getColNumber(document, col, searchRow, partialMatch);
 	if (colNumber === -1) {
 		vscode.window.showErrorMessage(`col: ${col} not found`);
 		return;
 	}
 
 	/* then get row number */
-	const rowNumber = getRowNumber(editor, row, searchCol);
+	const rowNumber = getRowNumber(editor, row, searchCol, partialMatch);
 	if (rowNumber === -1) {
 		vscode.window.showErrorMessage(`row: ${row} not found`);
 		return;
@@ -224,20 +169,20 @@ async function setCellValue(editor: vscode.TextEditor, userResponse: { row: stri
 	await vscode.window.showTextDocument(document, { preview: false, preserveFocus: false });
 }
 
-function getCellValue(editor: vscode.TextEditor, userResponse: { row: string, col: string, searchRow: number, searchCol: number }): string {
+function getCellValue(editor: vscode.TextEditor, userResponse: { row: string, col: string, searchRow: number, searchCol: number, partialMatch: boolean }): string {
 	const document = editor.document;
-	const { row, col, searchRow, searchCol } = userResponse;
+	const { row, col, searchRow, searchCol, partialMatch } = userResponse;
 	/* search the currently opened csv file, find the target cell, and set the value */
 
 	/* first get the col number */
-	const colNumber = getColNumber(document, col, searchRow);
+	const colNumber = getColNumber(document, col, searchRow, partialMatch);
 	if (colNumber === -1) {
 		vscode.window.showErrorMessage(`col: ${col} not found`);
 		return '';
 	}
 
 	/* then get row number */
-	const rowNumber = getRowNumber(editor, row, searchCol);
+	const rowNumber = getRowNumber(editor, row, searchCol, partialMatch);
 	if (rowNumber === -1) {
 		vscode.window.showErrorMessage(`row: ${row} not found`);
 		return '';
@@ -257,65 +202,7 @@ function getCellValue(editor: vscode.TextEditor, userResponse: { row: string, co
 	return cellVal;
 }
 
-async function setCellCommandCallback(context: vscode.ExtensionContext) {
-	// Get the active text editor
-	const editor = vscode.window.activeTextEditor;
-
-	if (!editor) {
-		vscode.window.showErrorMessage('No active text editor found');
-		return;
-	}
-	const lastInput = getLastInput(context);
-	const userResponse = await vscode.window.showInputBox({
-		placeHolder: 'row name, col name, cell value',
-		value: lastInput
-	});
-
-	if (!userResponse) {
-		return;
-	}
-
-	setLastInput(context, userResponse);
-	const parsedSetInput = parseSetInput(userResponse);
-	if (!parsedSetInput) {
-		return;
-	}
-	await setCellValue(editor, parsedSetInput);
-}
-
-async function getCallCommandCallback(context: vscode.ExtensionContext) {
-	// Get the active text editor
-	const editor = vscode.window.activeTextEditor;
-
-	if (!editor) {
-		vscode.window.showErrorMessage('No active text editor found');
-		return;
-	}
-
-	const lastInput = getLastInput(context);
-	const userResponse = await vscode.window.showInputBox({
-		placeHolder: 'row name, col name',
-		value: lastInput
-	});
-
-	if (!userResponse) {
-		return;
-	}
-
-	setLastInput(context, userResponse);
-	const parsedGetInput = parseGetInput(userResponse);
-	if (!parsedGetInput) {
-		return;
-	}
-	getCellValue(editor, parsedGetInput);
-}
-
 export function activate(context: vscode.ExtensionContext) {
-	const setCellValueDisposable = vscode.commands.registerCommand('extension.setCell', setCellCommandCallback.bind(null, context));
-	const getCellValueDisposable = vscode.commands.registerCommand('extension.getCell', getCallCommandCallback.bind(null, context));
-
-	context.subscriptions.push(setCellValueDisposable, getCellValueDisposable);
-
 	const csvManipulatorViewProvider = new CsvManipulatorViewProvider(context);
 	context.subscriptions.push(vscode.window.registerWebviewViewProvider(CsvManipulatorViewProvider.viewId, csvManipulatorViewProvider));
 }
