@@ -10,6 +10,7 @@ class CsvManipulatorViewProvider implements vscode.WebviewViewProvider {
 		this._extensionUri = extensionContext.extensionUri;
 		this._extensionContext = extensionContext;
 	}
+
 	public resolveWebviewView(webviewView: vscode.WebviewView) {
 		webviewView.webview.options = {
 			enableScripts: true,
@@ -72,6 +73,14 @@ class CsvManipulatorViewProvider implements vscode.WebviewViewProvider {
 		});
 
 	}
+
+	public plotAllMatchesTable(entries:{ cellVal: string, rowName: string, colName: string }[]) {
+		this._view?.webview.postMessage({
+			command: 'csv-manipulate-plot-all-matches',
+			entries
+		});
+	}
+
 	private _getHtmlForWebview(webview: vscode.Webview) {
 		const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'src', 'media', 'main.js'));
 		const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'src', 'media', 'main.css'));
@@ -107,6 +116,12 @@ class CsvManipulatorViewProvider implements vscode.WebviewViewProvider {
 					<div>
 						<input type="checkbox" id="csv-manipulate-partial-match" checked />
 						<label for="csv-manipulate-partial-match"> 部分匹配</label>
+					</div>
+					<div>
+						<input type="checkbox" id="csv-manipulate-find-all" />
+						<label for="csv-manipulate-find-all"> 全部匹配</label>
+					</div>
+					<div id="csv-manipulate-multiple-matches-container">
 					</div>
 				</div>
 				<script src="${scriptUri}"></script>

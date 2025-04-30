@@ -5,14 +5,15 @@ const config = vscode.workspace.getConfiguration('csv-manipulate');
 const sep: string = config.get('separator') || ',';
 const trimEnabled: boolean = config.get('trimEnabled') || true;
 const caseInsensitive: boolean = config.get('caseInsensitive') || true;
-
+let csvManipulatorViewProvider: CsvManipulatorViewProvider | undefined;
 interface UserResponse {
 	row: string;
 	col: string;
 	searchRow: number;
 	searchCol: number;
 	target: string;
-	partialMatch: boolean
+	partialMatch: boolean;
+	findAll: boolean;
 }
 
 function setLastInput(context: vscode.ExtensionContext, userResponse: UserResponse): void {
@@ -56,29 +57,32 @@ function processGetInput(userGetInput: UserResponse): UserResponse {
 	return res;
 }
 
-function getColNumber(document: vscode.TextDocument, col: string, searchRow: number, partialMatch: boolean): number {
-	let colNumber = -1;
-	document.lineAt(searchRow - 1).text.split(sep).find((cell, index) => {
+function getColNumbers(document: vscode.TextDocument, col: string, searchRow: number, partialMatch: boolean): number[] {
+	let res: number[] = [];
+	const headers = document.lineAt(searchRow - 1).text.split(sep);
+	for (let index = 1; index < headers.length; index += 1) {
+		let cell = headers[index];
 		if (caseInsensitive) {
 			cell = cell.toLowerCase();
 		}
 		if (partialMatch && cell.includes(col) || cell === col) {
-			colNumber = index;
-			return true;
+			res.push(index);
 		}
-	});
-	return colNumber;
+	};
+	return res;
 }
 
-/* by the target column, find the matching row, move cursor to the target, and perform callback */
-function __doRow(editor: vscode.TextEditor, row: string, searchCol: number, callback: (line: string, index: number) => void, partialMatch: boolean): void {
-	const document = editor.document;
+/* by the target column, find the matching row(s) */
+function getRowNumbers(document: vscode.TextDocument, row: string, searchCol: number, partialMatch: boolean): number[] {
 	const lines = document.getText().split('\n')
+	const rowNumbers: number[] = [];
 	for (let index = 1; index < lines.length; index += 1) {
 		const line = lines[index];
 		let cellStart = 0;
 		let cellEnd = 0;
 		let curCol = 1;
+
+		/* jump to the target column */
 		while (cellStart < line.length) {
 			cellEnd = line.indexOf(sep, cellStart);
 			if (cellEnd === -1) {
@@ -101,21 +105,13 @@ function __doRow(editor: vscode.TextEditor, row: string, searchCol: number, call
 			searchedCell = searchedCell.toLowerCase();
 		}
 		if (partialMatch && searchedCell.includes(row) || searchedCell === row) {
-			callback(line, index);
-			break;
+			rowNumbers.push(index);
 		}
 	}
+	return rowNumbers;
 }
 
-function getRowNumber(editor: vscode.TextEditor, row: string, searchCol: number, partialMatch: boolean): number {
-	let rowNumber = -1;
-	__doRow(editor, row, searchCol, (_, index) => {
-		rowNumber = index;
-	}, partialMatch);
-	return rowNumber;
-}
-
-function getCellValueAndSelection(document: vscode.TextDocument, rowNumber: number, colNumber: number): { cellVal: string, cellSelection: vscode.Selection } {
+function findCellValueAndSelection(document: vscode.TextDocument, rowNumber: number, colNumber: number): { cellVal: string, cellSelection: vscode.Selection } {
 	let cellVal = '';
 	let charCnt = 0;
 	const targetRow = document.lineAt(rowNumber);
@@ -137,24 +133,44 @@ function getCellValueAndSelection(document: vscode.TextDocument, rowNumber: numb
 	}
 }
 
-async function setCellValue(editor: vscode.TextEditor, userResponse: { row: string, col: string, searchRow: number, searchCol: number, target: string, partialMatch: boolean }): Promise<void> {
+function findCellValueAndHeaderNames(document: vscode.TextDocument, rowNumber: number, colNumber: number, searchCol: number, searchRow: number): { cellVal: string, rowName: string, colName: string } {
+	/* note searchCol and searchRow are 1-based */
+	const targetRow = document.lineAt(rowNumber);
+	const cells = targetRow.text.split(sep);
+	const rowName = cells[searchCol - 1];
+	const colName = document.lineAt(searchRow - 1).text.split(sep)[colNumber];
+	const cellVal = cells[colNumber];
+	return { cellVal, rowName, colName };
+}
+
+async function setCellValue(editor: vscode.TextEditor, userResponse: UserResponse): Promise<void> {
 	const { row, col, target, searchRow, searchCol, partialMatch } = userResponse;
 	const document = editor.document;
 	/* search the currently opened csv file, find the target cell, and set the value */
-	const colNumber = getColNumber(document, col, searchRow, partialMatch);
-	if (colNumber === -1) {
+	const colNumbers = getColNumbers(document, col, searchRow, partialMatch);
+	if (colNumbers.length === 0) {
 		vscode.window.showErrorMessage(`col: ${col} not found`);
+		return;
+	} else if (colNumbers.length > 1) {
+		vscode.window.showErrorMessage(`found multiple matched cols`);
 		return;
 	}
 
 	/* then get row number */
-	const rowNumber = getRowNumber(editor, row, searchCol, partialMatch);
-	if (rowNumber === -1) {
+	const rowNumbers = getRowNumbers(document, row, searchCol, partialMatch);
+	if (rowNumbers.length === 0) {
 		vscode.window.showErrorMessage(`row: ${row} not found`);
+		return;
+	} else if (rowNumbers.length > 1) {
+		vscode.window.showErrorMessage(`found multiple matched rows`);
 		return;
 	}
 
-	const { cellSelection } = getCellValueAndSelection(document, rowNumber, colNumber);
+	/* Now we know there is only one match. Go set the target cell */
+	const rowNumber = rowNumbers[0];
+	const colNumber = colNumbers[0];
+
+	const { cellSelection } = findCellValueAndSelection(document, rowNumber, colNumber);
 
 	await editor.edit(editBuilder => {
 		editBuilder.replace(cellSelection, target);
@@ -169,27 +185,41 @@ async function setCellValue(editor: vscode.TextEditor, userResponse: { row: stri
 	await vscode.window.showTextDocument(document, { preview: false, preserveFocus: false });
 }
 
-function getCellValue(editor: vscode.TextEditor, userResponse: { row: string, col: string, searchRow: number, searchCol: number, partialMatch: boolean }): string {
+function getCellValue(editor: vscode.TextEditor, userResponse: UserResponse): string {
 	const document = editor.document;
-	const { row, col, searchRow, searchCol, partialMatch } = userResponse;
-	/* search the currently opened csv file, find the target cell, and set the value */
+	const { row, col, searchRow, searchCol, partialMatch, findAll } = userResponse;
+	/* search the currently opened csv file, find the target cell */
 
-	/* first get the col number */
-	const colNumber = getColNumber(document, col, searchRow, partialMatch);
-	if (colNumber === -1) {
+	/* first get the col number(s) */
+	const colNumbers = getColNumbers(document, col, searchRow, partialMatch);
+	if (colNumbers.length === 0) {
 		vscode.window.showErrorMessage(`col: ${col} not found`);
 		return '';
-	}
-
-	/* then get row number */
-	const rowNumber = getRowNumber(editor, row, searchCol, partialMatch);
-	if (rowNumber === -1) {
-		vscode.window.showErrorMessage(`row: ${row} not found`);
+	} else if (!findAll && colNumbers.length > 1) {
+		vscode.window.showErrorMessage(`found multiple matched cols`);
 		return '';
 	}
 
-	/* then get the target cell */
-	const { cellVal, cellSelection } = getCellValueAndSelection(document, rowNumber, colNumber);
+	/* then get row number(s) */
+	const rowNumbers = getRowNumbers(document, row, searchCol, partialMatch);
+	if (rowNumbers.length === 0) {
+		vscode.window.showErrorMessage(`row: ${row} not found`);
+		return '';
+	} else if (!findAll && rowNumbers.length > 1) {
+		vscode.window.showErrorMessage(`found multiple matched rows`);
+		return '';
+	}
+
+	if (findAll && (rowNumbers.length > 1 || colNumbers.length > 1)) {
+		plotResultTable(document, rowNumbers, colNumbers, searchCol, searchRow);
+		vscode.window.showInformationMessage("found multiple matches");
+		return '';
+	}
+
+	/* Now we know there is only one match. Go get the target cell */
+	const rowNumber = rowNumbers[0];
+	const colNumber = colNumbers[0];
+	const { cellVal, cellSelection } = findCellValueAndSelection(document, rowNumber, colNumber);
 	if (cellVal === '') {
 		vscode.window.showErrorMessage(`cell: ${row}, ${col} not found`);
 		return '';
@@ -202,8 +232,19 @@ function getCellValue(editor: vscode.TextEditor, userResponse: { row: string, co
 	return cellVal;
 }
 
+function plotResultTable(document: vscode.TextDocument, rowNumbers: number[], colNumbers: number[], searchCol: number, searchRow: number) {
+	/* first find all matches and generate html */
+	const entries: { cellVal: string, rowName: string, colName: string }[] = [];
+	for (let rowNumber of rowNumbers) {
+		for (let colNumber of colNumbers) {
+			entries.push(findCellValueAndHeaderNames(document, rowNumber, colNumber, searchCol, searchRow));
+		}
+	}
+	csvManipulatorViewProvider?.plotAllMatchesTable(entries);
+}
+
 export function activate(context: vscode.ExtensionContext) {
-	const csvManipulatorViewProvider = new CsvManipulatorViewProvider(context);
+	csvManipulatorViewProvider = new CsvManipulatorViewProvider(context);
 	context.subscriptions.push(vscode.window.registerWebviewViewProvider(CsvManipulatorViewProvider.viewId, csvManipulatorViewProvider));
 }
 
