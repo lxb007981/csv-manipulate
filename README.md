@@ -25,12 +25,11 @@ There are several tunable options controlling the behavior of the extension, che
 |6. Fuzzy search															|	❌|
 |7. Move cursor to target after getting/setting								|	✅|
 |8. Autocomplete															|	❌|
+|9. Find all matches.                                                       |   ✅|
 
 # Changelog
 
-## v0.1.1
-1. Add findAll option.
-
 ## v0.1.0
-1. *Breaking* Remove CLI.
-2. Move `partialMatch` option to the sidebar panel.
+1. *Breaking* Add findAll option. Now the extension will complain when it finds multiple matches.
+2. *Breaking* Remove CLI.
+3. Move `partialMatch` option to the sidebar panel.

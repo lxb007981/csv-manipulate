@@ -143,15 +143,13 @@ function findCellValueAndHeaderNames(document: vscode.TextDocument, rowNumber: n
 	return { cellVal, rowName, colName };
 }
 
-async function setCellValue(editor: vscode.TextEditor, userResponse: UserResponse): Promise<void> {
-	const { row, col, target, searchRow, searchCol, partialMatch } = userResponse;
-	const document = editor.document;
-	/* search the currently opened csv file, find the target cell, and set the value */
+function tryGetColNumberAndRowNumber(document: vscode.TextDocument, userResponse: UserResponse): { rowNumber: number, colNumber: number } | undefined {
+	const { row, col, searchRow, searchCol, partialMatch, findAll } = userResponse;
 	const colNumbers = getColNumbers(document, col, searchRow, partialMatch);
 	if (colNumbers.length === 0) {
 		vscode.window.showErrorMessage(`col: ${col} not found`);
 		return;
-	} else if (colNumbers.length > 1) {
+	} else if (!findAll && colNumbers.length > 1) {
 		vscode.window.showErrorMessage(`found multiple matched cols`);
 		return;
 	}
@@ -161,16 +159,31 @@ async function setCellValue(editor: vscode.TextEditor, userResponse: UserRespons
 	if (rowNumbers.length === 0) {
 		vscode.window.showErrorMessage(`row: ${row} not found`);
 		return;
-	} else if (rowNumbers.length > 1) {
+	} else if (!findAll && rowNumbers.length > 1) {
 		vscode.window.showErrorMessage(`found multiple matched rows`);
 		return;
 	}
 
-	/* Now we know there is only one match. Go set the target cell */
-	const rowNumber = rowNumbers[0];
-	const colNumber = colNumbers[0];
+	if (findAll && (rowNumbers.length > 1 || colNumbers.length > 1)) {
+		plotResultTable(document, rowNumbers, colNumbers, searchCol, searchRow);
+		vscode.window.showInformationMessage("found multiple matches");
+		return;
+	}
 
+	return { rowNumber: rowNumbers[0], colNumber: colNumbers[0] };
+}
+
+async function setCellValue(editor: vscode.TextEditor, userResponse: UserResponse): Promise<void> {
+	const document = editor.document;
+	/* search the currently opened csv file, find the target cell, and set the value */
+	const rowNumberAndColNumber = tryGetColNumberAndRowNumber(document, userResponse);
+	if (!rowNumberAndColNumber) {
+		return;
+	}
+	const { rowNumber, colNumber } = rowNumberAndColNumber;
+	/* Now we know there is only one match. Go set the target cell */
 	const { cellSelection } = findCellValueAndSelection(document, rowNumber, colNumber);
+	const { target } = userResponse;
 
 	await editor.edit(editBuilder => {
 		editBuilder.replace(cellSelection, target);
@@ -187,38 +200,15 @@ async function setCellValue(editor: vscode.TextEditor, userResponse: UserRespons
 
 function getCellValue(editor: vscode.TextEditor, userResponse: UserResponse): string {
 	const document = editor.document;
-	const { row, col, searchRow, searchCol, partialMatch, findAll } = userResponse;
+	const { row, col } = userResponse;
 	/* search the currently opened csv file, find the target cell */
-
-	/* first get the col number(s) */
-	const colNumbers = getColNumbers(document, col, searchRow, partialMatch);
-	if (colNumbers.length === 0) {
-		vscode.window.showErrorMessage(`col: ${col} not found`);
-		return '';
-	} else if (!findAll && colNumbers.length > 1) {
-		vscode.window.showErrorMessage(`found multiple matched cols`);
-		return '';
-	}
-
-	/* then get row number(s) */
-	const rowNumbers = getRowNumbers(document, row, searchCol, partialMatch);
-	if (rowNumbers.length === 0) {
-		vscode.window.showErrorMessage(`row: ${row} not found`);
-		return '';
-	} else if (!findAll && rowNumbers.length > 1) {
-		vscode.window.showErrorMessage(`found multiple matched rows`);
-		return '';
-	}
-
-	if (findAll && (rowNumbers.length > 1 || colNumbers.length > 1)) {
-		plotResultTable(document, rowNumbers, colNumbers, searchCol, searchRow);
-		vscode.window.showInformationMessage("found multiple matches");
+	const rowNumberAndColNumber = tryGetColNumberAndRowNumber(document, userResponse);
+	if (!rowNumberAndColNumber) {
 		return '';
 	}
 
 	/* Now we know there is only one match. Go get the target cell */
-	const rowNumber = rowNumbers[0];
-	const colNumber = colNumbers[0];
+	const { rowNumber, colNumber } = rowNumberAndColNumber;
 	const { cellVal, cellSelection } = findCellValueAndSelection(document, rowNumber, colNumber);
 	if (cellVal === '') {
 		vscode.window.showErrorMessage(`cell: ${row}, ${col} not found`);

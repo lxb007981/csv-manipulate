@@ -72,9 +72,9 @@ function panelPlotAllMatchesTable(entries) {
 	// Convert Sets to sorted arrays for consistent order
 	const sortedRowNames = Array.from(uniqueRowNames).sort();
 	const sortedColNames = Array.from(uniqueColNames).sort();
-
+	let html = '<p>Found multiple matches. </p>'
 	// 2. Generate HTML Table String
-	let html = '<table>';
+	html += '<table>';
 
 	// --- Header Row (thead) ---
 	html += '<thead><tr>';
