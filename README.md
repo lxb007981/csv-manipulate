@@ -27,6 +27,10 @@ There are several tunable options controlling the behavior of the extension, che
 |8. Autocomplete															|	❌|
 
 # Changelog
+
+## v0.1.1
+1. Add findAll option.
+
 ## v0.1.0
 1. *Breaking* Remove CLI.
 2. Move `partialMatch` option to the sidebar panel.

@@ -31,6 +31,7 @@ thead th:first-child {
 /* Style for row header cells */
 tbody th {
      background-color: #f9f9f9;
+     color: black;
      font-weight: bold;
 }
 /* Style for empty cells */

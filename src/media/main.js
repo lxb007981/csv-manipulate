@@ -23,6 +23,7 @@ function getUserResponse(requireTarget) {
 }
 
 document.getElementById('csv-manipulate-get-button').addEventListener('click', () => {
+	clearPlotTable();
 	vscode.postMessage({
 		command: 'csv-manipulate-get',
 		userResponse: getUserResponse(requireTarget = false)
@@ -30,6 +31,7 @@ document.getElementById('csv-manipulate-get-button').addEventListener('click', (
 });
 
 document.getElementById('csv-manipulate-set-button').addEventListener('click', () => {
+	clearPlotTable();
 	vscode.postMessage({
 		command: 'csv-manipulate-set',
 		userResponse: getUserResponse(requireTarget = true)
@@ -100,6 +102,15 @@ function panelPlotAllMatchesTable(entries) {
 	html += '</table>';
 	tableContainer.innerHTML = html;
 }
+
+function clearPlotTable() {
+	const tableContainer = document.getElementById("csv-manipulate-multiple-matches-container");
+	if (!tableContainer) {
+		return;
+	}
+	tableContainer.innerHTML = '';
+}
+
 window.addEventListener('message', event => {
 	const message = event.data;
 	const row = document.getElementById('csv-manipulate-row');
