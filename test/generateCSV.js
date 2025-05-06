@@ -5,8 +5,8 @@ const rows = 500;
 const cols = 150;
 
 // Function to generate a random 'Y' or 'N'
-function getRandomYN() {
-    return Math.random() < 0.5 ? 'Y' : 'N';
+function genCell(row, col) {
+    return `row${row}_col${col}`
 }
 
 // Function to generate the CSV content
@@ -23,7 +23,7 @@ function generateCSV(rows, cols) {
     for (let i = 1; i <= rows; i++) {
         csvContent += `${getRandomPrefix()}_row_${i}`;
         for (let j = 1; j <= cols; j++) {
-            csvContent += `,${getRandomYN()}`;
+            csvContent += `,${genCell(i, j)}`;
         }
         csvContent += '\n';
     }
@@ -49,7 +49,7 @@ function generateCSV_row2(rows, cols) {
     for (let i = 1; i <= rows; i++) {
         csvContent += `${getRandomPrefix()}_row_${i}`;
         for (let j = 1; j <= cols; j++) {
-            csvContent += `,${getRandomYN()}`;
+            csvContent += `,${genCell(i, j)}`;
         }
         csvContent += '\n';
     }
@@ -71,7 +71,7 @@ function generateCSV_col2(rows, cols) {
     for (let i = 1; i <= rows; i++) {
         csvContent += `nonsense,${getRandomPrefix()}_row_${i}`;
         for (let j = 1; j <= cols; j++) {
-            csvContent += `,${getRandomYN()}`;
+            csvContent += `,${genCell(i, j)}`;
         }
         csvContent += '\n';
     }
