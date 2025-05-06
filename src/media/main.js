@@ -26,7 +26,7 @@ document.getElementById('csv-manipulate-get-button').addEventListener('click', (
 	clearPlotTable();
 	vscode.postMessage({
 		command: 'csv-manipulate-get',
-		userResponse: getUserResponse(requireTarget = false)
+		userResponse: getUserResponse(false)
 	});
 });
 
@@ -34,7 +34,7 @@ document.getElementById('csv-manipulate-set-button').addEventListener('click', (
 	clearPlotTable();
 	vscode.postMessage({
 		command: 'csv-manipulate-set',
-		userResponse: getUserResponse(requireTarget = true)
+		userResponse: getUserResponse(true)
 	});
 });
 
@@ -56,7 +56,7 @@ function panelPlotAllMatchesTable(entries) {
 	const dataLookup = {}; // Structure: { rowName: { colName: cellValue } }
 
 	// find unique rows/cols and build lookup structure
-	entries.forEach(({rowName, colName, cellVal}) => {
+	entries.forEach(({ rowName, colName, cellVal }) => {
 		if (rowName === undefined || colName === undefined || cellVal === undefined) {
 			return;
 		}

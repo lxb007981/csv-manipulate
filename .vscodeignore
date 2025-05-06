@@ -5,3 +5,8 @@
 .vscode
 **/*.csv
 test/
+node_modules
+out/
+src/
+esbuild.js
+**/*.map
