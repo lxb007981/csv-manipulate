@@ -2,7 +2,7 @@
   "name": "csv-manipuate",
   "displayName": "CSV-Manipulate",
   "description": "Get/Set a cell's value in a csv file using row/column names.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "l00870118",
   "private": true,
   "license": "MIT",
