@@ -2,8 +2,8 @@
   "name": "csv-manipuate",
   "displayName": "CSV-Manipulate",
   "description": "Get/Set a cell's value in a csv file using row/column names.",
-  "version": "0.1.2",
-  "publisher": "lxb007981",
+  "version": "0.1.0",
+  "publisher": "l00870118",
   "private": true,
   "license": "MIT",
   "repository": {
@@ -19,16 +19,6 @@
   "activationEvents": [],
   "main": "./out/extension",
   "contributes": {
-    "commands": [
-      {
-        "command": "extension.getCell",
-        "title": "Get Cell"
-      },
-      {
-        "command": "extension.setCell",
-        "title": "Set Cell"
-      }
-    ],
     "configuration": {
       "title": "CSV-Manipulate",
       "properties": {

@@ -30,6 +30,6 @@ There are several tunable options controlling the behavior of the extension, che
 # Changelog
 
 ## v0.1.0
-1. *Breaking* Add findAll option. Now the extension will complain when it finds multiple matches.
-2. *Breaking* Remove CLI.
+1. *Breaking change:* Add findAll option. Now the extension will complain when it finds multiple matches.
+2. *Breaking change:* Remove CLI.
 3. Move `partialMatch` option to the sidebar panel.
