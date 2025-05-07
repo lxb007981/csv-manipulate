@@ -10,6 +10,7 @@
     "type": "git",
     "url": "https://github.com/lxb007981/csv-manipulate"
   },
+  "icon": "resources/csv-manipulate-store-icon.png",
   "engines": {
     "vscode": "^1.74.0"
   },
