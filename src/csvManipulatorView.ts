@@ -74,10 +74,10 @@ class CsvManipulatorViewProvider implements vscode.WebviewViewProvider {
 
 	}
 
-	public plotAllMatchesTable(entries:{ cellVal: string, rowName: string, colName: string }[]) {
+	public plotAllMatchesTable(html: string) {
 		this._view?.webview.postMessage({
 			command: 'csv-manipulate-plot-all-matches',
-			entries
+			html
 		});
 	}
 

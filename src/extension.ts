@@ -133,16 +133,6 @@ function findCellValueAndSelection(document: vscode.TextDocument, rowNumber: num
 	}
 }
 
-function findCellValueAndHeaderNames(document: vscode.TextDocument, rowNumber: number, colNumber: number, searchCol: number, searchRow: number): { cellVal: string, rowName: string, colName: string } {
-	/* note searchCol and searchRow are 1-based */
-	const targetRow = document.lineAt(rowNumber);
-	const cells = targetRow.text.split(sep);
-	const rowName = cells[searchCol - 1];
-	const colName = document.lineAt(searchRow - 1).text.split(sep)[colNumber];
-	const cellVal = cells[colNumber];
-	return { cellVal, rowName, colName };
-}
-
 function tryGetColNumberAndRowNumber(document: vscode.TextDocument, userResponse: UserResponse): { rowNumber: number, colNumber: number } | undefined {
 	const { row, col, searchRow, searchCol, partialMatch, findAll } = userResponse;
 	const colNumbers = getColNumbers(document, col, searchRow, partialMatch);
@@ -222,15 +212,36 @@ function getCellValue(editor: vscode.TextEditor, userResponse: UserResponse): st
 	return cellVal;
 }
 
+/* Note: rowNumbers and colNumbers are 0-based, increasing index. searchCol and searchRow are 1-based indices */
 function plotResultTable(document: vscode.TextDocument, rowNumbers: number[], colNumbers: number[], searchCol: number, searchRow: number) {
 	/* first find all matches and generate html */
-	const entries: { cellVal: string, rowName: string, colName: string }[] = [];
-	for (let rowNumber of rowNumbers) {
-		for (let colNumber of colNumbers) {
-			entries.push(findCellValueAndHeaderNames(document, rowNumber, colNumber, searchCol, searchRow));
-		}
-	}
-	csvManipulatorViewProvider?.plotAllMatchesTable(entries);
+	let html = '<table>';
+
+    // 1. Create Table Header (<thead>)
+    html += '<thead><tr>';
+    html += '<th></th>'; // Empty top-left corner cell
+	const headers = document.lineAt(searchRow - 1).text.split(sep);
+    for (const colNum of colNumbers) {
+        const colName = headers[colNum];
+        html += `<th>${colName}</th>`;
+    }
+    html += '</tr></thead>';
+	html += '<tbody>';
+    for (const rowNum of rowNumbers) {
+        html += '<tr>';
+		const targetRowCells = document.lineAt(rowNum).text.split(sep);
+        const rowName = targetRowCells[searchCol - 1]; // Get the row name from the search column
+        html += `<th>${rowName}</th>`; // Row header cell
+
+        for (const colNum of colNumbers) {
+            const cellValue = targetRowCells[colNum];
+            html += `<td>${cellValue}</td>`;
+        }
+        html += '</tr>';
+    }
+    html += '</tbody>';
+    html += '</table>';
+	csvManipulatorViewProvider?.plotAllMatchesTable(html);
 }
 
 export function activate(context: vscode.ExtensionContext) {
