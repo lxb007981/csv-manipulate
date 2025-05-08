@@ -149,7 +149,6 @@ function tryGetColNumberAndRowNumber(document: vscode.TextDocument, userResponse
 
 	if (rowNumbers.length > 1 || colNumbers.length > 1) {
 		plotResultTable(document, rowNumbers, colNumbers, searchCol, searchRow);
-		vscode.window.showInformationMessage("found multiple matches");
 		return;
 	}
 
@@ -208,7 +207,8 @@ function getCellValue(editor: vscode.TextEditor, userResponse: UserResponse): st
 /* Note: rowNumbers and colNumbers are 0-based, increasing index. searchCol and searchRow are 1-based indices */
 function plotResultTable(document: vscode.TextDocument, rowNumbers: number[], colNumbers: number[], searchCol: number, searchRow: number) {
 	/* first find all matches and generate html */
-	let html = '<table>';
+	let html = "<p>找到多个匹配</p>"
+	html += '<table>';
 
 	// 1. Create Table Header (<thead>)
 	html += '<thead><tr>';
