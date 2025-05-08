@@ -217,30 +217,30 @@ function plotResultTable(document: vscode.TextDocument, rowNumbers: number[], co
 	/* first find all matches and generate html */
 	let html = '<table>';
 
-    // 1. Create Table Header (<thead>)
-    html += '<thead><tr>';
-    html += '<th></th>'; // Empty top-left corner cell
+	// 1. Create Table Header (<thead>)
+	html += '<thead><tr>';
+	html += '<th></th>'; // Empty top-left corner cell
 	const headers = document.lineAt(searchRow - 1).text.split(sep);
-    for (const colNum of colNumbers) {
-        const colName = headers[colNum];
-        html += `<th>${colName}</th>`;
-    }
-    html += '</tr></thead>';
+	for (const colNum of colNumbers) {
+		const colName = headers[colNum];
+		html += `<th>C${colNum + 1}: ${colName}</th>`;
+	}
+	html += '</tr></thead>';
 	html += '<tbody>';
-    for (const rowNum of rowNumbers) {
-        html += '<tr>';
+	for (const rowNum of rowNumbers) {
+		html += '<tr>';
 		const targetRowCells = document.lineAt(rowNum).text.split(sep);
-        const rowName = targetRowCells[searchCol - 1]; // Get the row name from the search column
-        html += `<th>${rowName}</th>`; // Row header cell
+		const rowName = targetRowCells[searchCol - 1]; // Get the row name from the search column
+		html += `<th>L${rowNum + 1}: ${rowName}</th>`; // Row header cell
 
-        for (const colNum of colNumbers) {
-            const cellValue = targetRowCells[colNum];
-            html += `<td>${cellValue}</td>`;
-        }
-        html += '</tr>';
-    }
-    html += '</tbody>';
-    html += '</table>';
+		for (const colNum of colNumbers) {
+			const cellValue = targetRowCells[colNum];
+			html += `<td>${cellValue}</td>`;
+		}
+		html += '</tr>';
+	}
+	html += '</tbody>';
+	html += '</table>';
 	csvManipulatorViewProvider?.plotAllMatchesTable(html);
 }
 
