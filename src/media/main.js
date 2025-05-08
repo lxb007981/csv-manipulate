@@ -6,7 +6,6 @@ function getUserResponse(requireTarget) {
 	const searchRow = document.getElementById('csv-manipulate-search-row').value || 1;
 	const searchCol = document.getElementById('csv-manipulate-search-col').value || 1;
 	const partialMatch = document.getElementById('csv-manipulate-partial-match').checked;
-	const findAll = document.getElementById('csv-manipulate-find-all').checked;
 	let res = {
 		row: row,
 		col: col,
@@ -14,7 +13,6 @@ function getUserResponse(requireTarget) {
 		searchCol: Number(searchCol),
 		target: "",
 		partialMatch,
-		findAll,
 	}
 	if (requireTarget) {
 		res.target = document.getElementById('csv-manipulate-target').value;

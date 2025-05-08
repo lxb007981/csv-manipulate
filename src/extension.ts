@@ -13,7 +13,6 @@ interface UserResponse {
 	searchCol: number;
 	target: string;
 	partialMatch: boolean;
-	findAll: boolean;
 }
 
 function setLastInput(context: vscode.ExtensionContext, userResponse: UserResponse): void {
@@ -134,13 +133,10 @@ function findCellValueAndSelection(document: vscode.TextDocument, rowNumber: num
 }
 
 function tryGetColNumberAndRowNumber(document: vscode.TextDocument, userResponse: UserResponse): { rowNumber: number, colNumber: number } | undefined {
-	const { row, col, searchRow, searchCol, partialMatch, findAll } = userResponse;
+	const { row, col, searchRow, searchCol, partialMatch } = userResponse;
 	const colNumbers = getColNumbers(document, col, searchRow, partialMatch);
 	if (colNumbers.length === 0) {
 		vscode.window.showErrorMessage(`col: ${col} not found`);
-		return;
-	} else if (!findAll && colNumbers.length > 1) {
-		vscode.window.showErrorMessage(`found multiple matched cols`);
 		return;
 	}
 
@@ -149,12 +145,9 @@ function tryGetColNumberAndRowNumber(document: vscode.TextDocument, userResponse
 	if (rowNumbers.length === 0) {
 		vscode.window.showErrorMessage(`row: ${row} not found`);
 		return;
-	} else if (!findAll && rowNumbers.length > 1) {
-		vscode.window.showErrorMessage(`found multiple matched rows`);
-		return;
 	}
 
-	if (findAll && (rowNumbers.length > 1 || colNumbers.length > 1)) {
+	if (rowNumbers.length > 1 || colNumbers.length > 1) {
 		plotResultTable(document, rowNumbers, colNumbers, searchCol, searchRow);
 		vscode.window.showInformationMessage("found multiple matches");
 		return;

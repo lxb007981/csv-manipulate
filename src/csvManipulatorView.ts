@@ -117,10 +117,6 @@ class CsvManipulatorViewProvider implements vscode.WebviewViewProvider {
 						<input type="checkbox" id="csv-manipulate-partial-match" checked />
 						<label for="csv-manipulate-partial-match"> 模糊匹配</label>
 					</div>
-					<div>
-						<input type="checkbox" id="csv-manipulate-find-all" checked />
-						<label for="csv-manipulate-find-all"> 搜索全部</label>
-					</div>
 					<div id="csv-manipulate-multiple-matches-container">
 					</div>
 				</div>
