@@ -59,6 +59,7 @@ function processGetInput(userGetInput: UserResponse): UserResponse {
 function getColNumbers(document: vscode.TextDocument, col: string, searchRow: number, partialMatch: boolean): number[] {
 	let res: number[] = [];
 	const headers = document.lineAt(searchRow - 1).text.split(sep);
+	/* index starts from 1 to skip header */
 	for (let index = 1; index < headers.length; index += 1) {
 		let cell = headers[index];
 		if (caseInsensitive) {
@@ -73,10 +74,10 @@ function getColNumbers(document: vscode.TextDocument, col: string, searchRow: nu
 
 /* by the target column, find the matching row(s) */
 function getRowNumbers(document: vscode.TextDocument, row: string, searchCol: number, partialMatch: boolean): number[] {
-	const lines = document.getText().split('\n')
 	const rowNumbers: number[] = [];
-	for (let index = 1; index < lines.length; index += 1) {
-		const line = lines[index];
+	/* index starts from 1 to skip header */
+	for (let index = 1; index < document.lineCount; index++) {
+        const line = document.lineAt(index).text;
 		let cellStart = 0;
 		let cellEnd = 0;
 		let curCol = 1;
@@ -85,16 +86,16 @@ function getRowNumbers(document: vscode.TextDocument, row: string, searchCol: nu
 		while (cellStart < line.length) {
 			cellEnd = line.indexOf(sep, cellStart);
 			if (cellEnd === -1) {
-				cellEnd = line.length;
+				cellEnd = line.length; /* Handle the last cell in the row. */
 			}
 			if (curCol == searchCol) {
-				break;
+				break; /* Found the target column */
 			}
 			cellStart = cellEnd + 1;
 			curCol += 1
 		}
 
-		/* continue searching the next row */
+		/* If the line doesn't have enough columns, or the target cell is empty, skip to the next line. */
 		if (curCol != searchCol || cellStart >= line.length) {
 			continue;
 		}
