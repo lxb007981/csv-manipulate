@@ -56,6 +56,7 @@ function processGetInput(userGetInput: UserResponse): UserResponse {
 	return res;
 }
 
+/* searchRow is 1-based. returned cols are 0-based. */
 function getColNumbers(document: vscode.TextDocument, col: string, searchRow: number, partialMatch: boolean): number[] {
 	let res: number[] = [];
 	const headers = document.lineAt(searchRow - 1).text.split(sep);
@@ -72,7 +73,7 @@ function getColNumbers(document: vscode.TextDocument, col: string, searchRow: nu
 	return res;
 }
 
-/* by the target column, find the matching row(s) */
+/* by the target column, find the matching row(s). searchCol is 1-based, returned rows are 0-based */
 function getRowNumbers(document: vscode.TextDocument, row: string, searchCol: number, partialMatch: boolean): number[] {
 	const rowNumbers: number[] = [];
 	/* index starts from 1 to skip header */
@@ -111,6 +112,7 @@ function getRowNumbers(document: vscode.TextDocument, row: string, searchCol: nu
 	return rowNumbers;
 }
 
+/* rowNumber and colNumber are 0-based */
 function findCellValueAndSelection(document: vscode.TextDocument, rowNumber: number, colNumber: number): { cellVal: string, cellSelection: vscode.Selection } {
 	let cellVal = '';
 	let charCnt = 0;
@@ -243,4 +245,4 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.window.registerWebviewViewProvider(CsvManipulatorViewProvider.viewId, csvManipulatorViewProvider));
 }
 
-export { setCellValue, getCellValue, setLastInput, getLastInput, processSetInput, processGetInput, isValidIndex }
+export { setCellValue, getCellValue, setLastInput, getLastInput, processSetInput, processGetInput, isValidIndex, getColNumbers, getRowNumbers, findCellValueAndSelection };
