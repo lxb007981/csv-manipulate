@@ -13,10 +13,11 @@ jobs:
       - name: Read package.json
         id: package_info
         run: |
-          # The `jq -r .version package.json` command extracts the version field.
-          # The output is then formatted as "key=value" and appended to $GITHUB_OUTPUT.
-          echo "version=$(jq -r .version package.json)" >> $GITHUB_OUTPUT
-          echo "name=$(jq -r .name package.json)" >> $GITHUB_OUTPUT
+          # The jq command below creates two lines of output:
+          # name=your-package-name
+          # version=1.2.3
+          # This is then appended to the GITHUB_OUTPUT file.
+          jq -r '"name=\(.name)\nversion=\(.version)"' package.json >> $GITHUB_OUTPUT
       - name: Install dependencies
         run: |
           npm ci
