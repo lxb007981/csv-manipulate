@@ -150,6 +150,11 @@ function tryGetColNumberAndRowNumber(document: vscode.TextDocument, userResponse
 		return;
 	}
 
+	if (rowNumbers.length * colNumbers.length > 300) {
+		vscode.window.showErrorMessage(`Found over 300 matches, please check the input.`);
+		return;
+	}
+
 	if (rowNumbers.length > 1 || colNumbers.length > 1) {
 		plotResultTable(document, rowNumbers, colNumbers, searchCol, searchRow);
 		return;

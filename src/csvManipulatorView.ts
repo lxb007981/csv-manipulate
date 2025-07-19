@@ -96,9 +96,9 @@ class CsvManipulatorViewProvider implements vscode.WebviewViewProvider {
 				<div id="root">
 					<div>
 						<input type="text" id="csv-manipulate-row" placeholder="row">
-						<label> 纵坐标</label>
+						<label> 行名</label>
 						<input type="text" id="csv-manipulate-col" placeholder="col">
-						<label> 横坐标</label>
+						<label> 列名</label>
 					</div>
 					<div>
 						<input type="text" id="csv-manipulate-search-row" placeholder="1">
