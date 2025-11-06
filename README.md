@@ -47,6 +47,10 @@ There are several tunable options controlling the behavior of the extension, che
 
 # Changelog
 
+## v0.1.2
+1. Now the extension will not render table when over 300 matches are found for performance concerns.
+2. Searching the csv is now done line by line to reduce memory footprints.
+
 ## v0.1.1
 1. *Breaking change:* Now the extension will complain when it finds multiple matches.
 2. *Breaking change:* Remove CLI.
